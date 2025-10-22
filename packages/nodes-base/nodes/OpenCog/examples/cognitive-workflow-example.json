@@ -1,0 +1,160 @@
+{
+  "name": "OpenCog Cognitive Workflow Example",
+  "description": "Demonstrates OpenCog cognitive automation capabilities including knowledge representation, reasoning, and autonomous agents",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "atomspace-input",
+      "name": "Knowledge Input",
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "ConceptNode",
+        "atomName": "Human",
+        "truthValue": {
+          "values": {
+            "strength": 0.9,
+            "confidence": 0.8
+          }
+        }
+      },
+      "position": [100, 100]
+    },
+    {
+      "id": "atomspace-relation",
+      "name": "Add Relations", 
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "InheritanceLink",
+        "atomName": "Human isa Animal",
+        "truthValue": {
+          "values": {
+            "strength": 0.95,
+            "confidence": 0.9
+          }
+        }
+      },
+      "position": [300, 100]
+    },
+    {
+      "id": "pattern-miner",
+      "name": "Mine Patterns",
+      "type": "n8n-nodes-base.patternMiner", 
+      "parameters": {
+        "miningType": "frequentPatterns",
+        "inputData": "Human, Animal, Mammal, Living_Being",
+        "patternConfig": {
+          "values": {
+            "minSupport": 0.3,
+            "maxPatternLength": 5
+          }
+        }
+      },
+      "position": [500, 100]
+    },
+    {
+      "id": "reasoning-engine",
+      "name": "Forward Reasoning",
+      "type": "n8n-nodes-base.reasoningEngine",
+      "parameters": {
+        "reasoningType": "forwardChaining", 
+        "inputKnowledge": "If Human isa Animal, and Animal isa Living_Being, then Human isa Living_Being",
+        "reasoningParams": {
+          "values": {
+            "maxSteps": 5,
+            "confidenceThreshold": 0.7,
+            "useUncertainty": true
+          }
+        }
+      },
+      "position": [700, 100]
+    },
+    {
+      "id": "cognitive-agent",
+      "name": "Learning Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "learning",
+        "agentName": "CogAgent1",
+        "inputStimulus": "New knowledge about human cognition",
+        "goals": "Learn about human behavior\nImprove reasoning capabilities\nAdapt to new information",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.6,
+            "learningRate": 0.2,
+            "memoryCapacity": 5000,
+            "explorationFactor": 0.4
+          }
+        }
+      },
+      "position": [900, 100]
+    }
+  ],
+  "connections": {
+    "atomspace-input": {
+      "main": [
+        {
+          "node": "atomspace-relation",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "atomspace-relation": {
+      "main": [
+        {
+          "node": "pattern-miner", 
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "pattern-miner": {
+      "main": [
+        {
+          "node": "reasoning-engine",
+          "type": "main", 
+          "index": 0
+        }
+      ]
+    },
+    "reasoning-engine": {
+      "main": [
+        {
+          "node": "cognitive-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2024-10-22T01:12:26.000Z",
+      "updatedAt": "2024-10-22T01:12:26.000Z", 
+      "id": "opencog",
+      "name": "OpenCog"
+    },
+    {
+      "createdAt": "2024-10-22T01:12:26.000Z",
+      "updatedAt": "2024-10-22T01:12:26.000Z",
+      "id": "cognitive",
+      "name": "Cognitive"
+    },
+    {
+      "createdAt": "2024-10-22T01:12:26.000Z", 
+      "updatedAt": "2024-10-22T01:12:26.000Z",
+      "id": "ai",
+      "name": "AI"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-10-22T01:12:26.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="30" cy="30" r="28" fill="#E74C3C" stroke="#C0392B" stroke-width="2"/>
+  <circle cx="30" cy="22" r="8" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="26" cy="20" r="2" fill="#E74C3C"/>
+  <circle cx="34" cy="20" r="2" fill="#E74C3C"/>
+  <path d="M26 24 Q30 26 34 24" stroke="#E74C3C" stroke-width="2" fill="none"/>
+  <rect x="22" y="32" width="16" height="12" rx="2" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="24" y="35" width="4" height="2" fill="#E74C3C"/>
+  <rect x="32" y="35" width="4" height="2" fill="#E74C3C"/>
+  <rect x="28" y="38" width="4" height="2" fill="#E74C3C"/>
+  <rect x="26" y="41" width="8" height="2" fill="#E74C3C"/>
+  <text x="30" y="52" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="7" font-weight="bold">AGENT</text>
+</svg>
