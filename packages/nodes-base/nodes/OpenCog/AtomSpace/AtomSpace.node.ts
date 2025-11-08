@@ -203,19 +203,19 @@ export class AtomSpace implements INodeType {
 			try {
 				switch (operation) {
 					case 'addAtom':
-						result = await this.addAtom(i);
+						result = await (this as any).addAtom(this, i);
 						break;
 					case 'queryAtoms':
-						result = await this.queryAtoms(i);
+						result = await (this as any).queryAtoms(this, i);
 						break;
 					case 'patternMatch':
-						result = await this.patternMatch(i);
+						result = await (this as any).patternMatch(this, i);
 						break;
 					case 'getTruthValue':
-						result = await this.getTruthValue(i);
+						result = await (this as any).getTruthValue(this, i);
 						break;
 					case 'setTruthValue':
-						result = await this.setTruthValue(i);
+						result = await (this as any).setTruthValue(this, i);
 						break;
 					default:
 						throw new Error(`Unknown operation: ${operation}`);
@@ -240,10 +240,11 @@ export class AtomSpace implements INodeType {
 		return [returnData];
 	}
 
-	private async addAtom(itemIndex: number): Promise<any> {
-		const atomType = this.getNodeParameter('atomType', itemIndex) as string;
-		const atomName = this.getNodeParameter('atomName', itemIndex) as string;
-		const truthValueParam = this.getNodeParameter('truthValue', itemIndex) as any;
+	// @ts-expect-error Method called dynamically via (this as any)
+	private async addAtom(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+		const atomType = context.getNodeParameter('atomType', itemIndex) as string;
+		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
+		const truthValueParam = context.getNodeParameter('truthValue', itemIndex) as any;
 		
 		const truthValue = truthValueParam?.values || { strength: 0.8, confidence: 0.9 };
 
@@ -261,9 +262,10 @@ export class AtomSpace implements INodeType {
 		};
 	}
 
-	private async queryAtoms(itemIndex: number): Promise<any> {
-		const atomName = this.getNodeParameter('atomName', itemIndex) as string;
-		const maxResults = this.getNodeParameter('maxResults', itemIndex) as number;
+	// @ts-expect-error Method called dynamically via (this as any)
+	private async queryAtoms(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
+		const maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
 
 		// Simulate query operation
 		const results = [];
@@ -289,9 +291,10 @@ export class AtomSpace implements INodeType {
 		};
 	}
 
-	private async patternMatch(itemIndex: number): Promise<any> {
-		const pattern = this.getNodeParameter('pattern', itemIndex) as string;
-		const maxResults = this.getNodeParameter('maxResults', itemIndex) as number;
+	// @ts-expect-error Method called dynamically via (this as any)
+	private async patternMatch(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+		const pattern = context.getNodeParameter('pattern', itemIndex) as string;
+		const maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
 
 		// Simulate pattern matching
 		const matches = [];
@@ -319,8 +322,9 @@ export class AtomSpace implements INodeType {
 		};
 	}
 
-	private async getTruthValue(itemIndex: number): Promise<any> {
-		const atomName = this.getNodeParameter('atomName', itemIndex) as string;
+	// @ts-expect-error Method called dynamically via (this as any)
+	private async getTruthValue(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
 
 		// Simulate getting truth value
 		return {
@@ -334,9 +338,10 @@ export class AtomSpace implements INodeType {
 		};
 	}
 
-	private async setTruthValue(itemIndex: number): Promise<any> {
-		const atomName = this.getNodeParameter('atomName', itemIndex) as string;
-		const truthValueParam = this.getNodeParameter('truthValue', itemIndex) as any;
+	// @ts-expect-error Method called dynamically via (this as any)
+	private async setTruthValue(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
+		const truthValueParam = context.getNodeParameter('truthValue', itemIndex) as any;
 		
 		const truthValue = truthValueParam?.values || { strength: 0.8, confidence: 0.9 };
 
