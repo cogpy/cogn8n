@@ -16,6 +16,13 @@ describe('AtomSpace Node', () => {
 		} as unknown as IExecuteFunctions;
 	});
 
+	// Helper function to create merged context for execute
+	const createContext = () => {
+		const context = Object.create(atomSpace);
+		Object.assign(context, mockExecuteFunctions);
+		return context;
+	};
+
 	describe('Node Properties', () => {
 		test('should have correct node properties', () => {
 			expect(atomSpace.description.name).toBe('atomSpace');
@@ -47,7 +54,11 @@ describe('AtomSpace Node', () => {
 				.mockReturnValueOnce('TestConcept') // atomName
 				.mockReturnValueOnce({ values: { strength: 0.8, confidence: 0.9 } }); // truthValue
 
-			const result = await atomSpace.execute.call(mockExecuteFunctions);
+			// Create a merged context that has both AtomSpace methods and IExecuteFunctions methods
+			const context = Object.create(atomSpace);
+			Object.assign(context, mockExecuteFunctions);
+			
+			const result = await atomSpace.execute.call(context);
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -70,7 +81,7 @@ describe('AtomSpace Node', () => {
 					.mockReturnValueOnce(`Test${atomType}`)
 					.mockReturnValueOnce({ values: { strength: 0.7, confidence: 0.8 } });
 
-				const result = await atomSpace.execute.call(mockExecuteFunctions);
+				const result = await atomSpace.execute.call(createContext());
 				const output = result[0][0].json;
 				
 				expect(output.atomType).toBe(atomType);
@@ -85,7 +96,7 @@ describe('AtomSpace Node', () => {
 				.mockReturnValueOnce('TestQuery') // atomName
 				.mockReturnValueOnce(5); // maxResults
 
-			const result = await atomSpace.execute.call(mockExecuteFunctions);
+			const result = await atomSpace.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -106,7 +117,7 @@ describe('AtomSpace Node', () => {
 				.mockReturnValueOnce('(InheritanceLink (VariableNode "$X") (ConceptNode "Animal"))') // pattern
 				.mockReturnValueOnce(10); // maxResults
 
-			const result = await atomSpace.execute.call(mockExecuteFunctions);
+			const result = await atomSpace.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -125,7 +136,7 @@ describe('AtomSpace Node', () => {
 				.mockReturnValueOnce('getTruthValue') // operation
 				.mockReturnValueOnce('TestAtom'); // atomName
 
-			const result = await atomSpace.execute.call(mockExecuteFunctions);
+			const result = await atomSpace.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.operation).toBe('getTruthValue');
@@ -141,7 +152,7 @@ describe('AtomSpace Node', () => {
 				.mockReturnValueOnce('TestAtom') // atomName
 				.mockReturnValueOnce({ values: { strength: 0.6, confidence: 0.7 } }); // truthValue
 
-			const result = await atomSpace.execute.call(mockExecuteFunctions);
+			const result = await atomSpace.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.operation).toBe('setTruthValue');
@@ -156,7 +167,7 @@ describe('AtomSpace Node', () => {
 				.mockReturnValueOnce('unknownOperation');
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
-			const result = await atomSpace.execute.call(mockExecuteFunctions);
+			const result = await atomSpace.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.error).toContain('Unknown operation');
