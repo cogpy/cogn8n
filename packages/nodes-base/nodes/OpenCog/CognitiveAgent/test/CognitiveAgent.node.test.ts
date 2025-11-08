@@ -14,6 +14,13 @@ describe('CognitiveAgent Node', () => {
 		} as unknown as IExecuteFunctions;
 	});
 
+	// Helper function to create merged context for execute
+	const createContext = () => {
+		const context = Object.create(cognitiveAgent);
+		Object.assign(context, mockExecuteFunctions);
+		return context;
+	};
+
 	describe('Node Properties', () => {
 		test('should have correct node properties', () => {
 			expect(cognitiveAgent.description.name).toBe('cognitiveAgent');
@@ -45,7 +52,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('Test stimulus') // inputStimulus
 				.mockReturnValueOnce({ values: { attentionThreshold: 0.5 } }); // agentConfig
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -68,7 +75,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('Goal 1\nGoal 2\nGoal 3') // goals
 				.mockReturnValueOnce({ values: {} }); // agentConfig
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('goalOriented');
@@ -88,7 +95,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('Learn pattern X') // goals
 				.mockReturnValueOnce({ values: { learningRate: 0.2 } }); // agentConfig
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('learning');
@@ -108,7 +115,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('Agent1, Agent2, Agent3') // otherAgents
 				.mockReturnValueOnce({ values: {} }); // agentConfig
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('social');
@@ -127,7 +134,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('Emotional stimulus') // inputStimulus
 				.mockReturnValueOnce({ values: { emotionalSensitivity: 0.8 } }); // agentConfig
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('emotional');
@@ -146,7 +153,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('Urgent stimulus') // inputStimulus
 				.mockReturnValueOnce({ values: {} }); // agentConfig
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('reactive');
@@ -162,7 +169,7 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce('unknownType');
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
-			const result = await cognitiveAgent.execute.call(mockExecuteFunctions);
+			const result = await cognitiveAgent.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.error).toContain('Unknown agent type');

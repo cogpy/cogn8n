@@ -16,6 +16,13 @@ describe('PatternMiner Node', () => {
 		} as unknown as IExecuteFunctions;
 	});
 
+	// Helper function to create merged context for execute
+	const createContext = () => {
+		const context = Object.create(patternMiner);
+		Object.assign(context, mockExecuteFunctions);
+		return context;
+	};
+
 	describe('Node Properties', () => {
 		test('should have correct node properties', () => {
 			expect(patternMiner.description.name).toBe('patternMiner');
@@ -47,7 +54,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('item1, item2, item3, item4') // inputData
 				.mockReturnValueOnce({ values: { minSupport: 0.3, maxPatternLength: 5 } }); // patternConfig
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -65,7 +72,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport: 0.2, maxPatternLength: 3 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.patterns.length).toBeGreaterThan(1);
@@ -83,7 +90,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport, maxPatternLength: 4 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			output.patterns.forEach((pattern: any) => {
@@ -99,7 +106,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('transaction data') // inputData
 				.mockReturnValueOnce({ values: { minSupport: 0.3, minConfidence: 0.6 } }); // patternConfig
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -117,7 +124,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport: 0.2, minConfidence: 0.5 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.rules.length).toBeGreaterThan(0);
@@ -140,7 +147,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport: 0.3, minConfidence } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.strongRules).toBeDefined();
@@ -156,7 +163,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('temporal data') // inputData
 				.mockReturnValueOnce({ values: { windowSize: 10 } }); // patternConfig
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -174,7 +181,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize: 8 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.temporalInsights).toBeDefined();
@@ -189,7 +196,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.config.windowSize).toBe(windowSize);
@@ -207,7 +214,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('causal data') // inputData
 				.mockReturnValueOnce({ values: { windowSize: 10 } }); // patternConfig
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -224,7 +231,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize: 12 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.causalNetwork).toBeDefined();
@@ -240,7 +247,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize: 10 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.insights).toBeDefined();
@@ -256,7 +263,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('data with anomalies') // inputData
 				.mockReturnValueOnce({ values: { anomalyThreshold: 0.9 } }); // patternConfig
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -274,7 +281,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { anomalyThreshold } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			output.anomalies.forEach((anomaly: any) => {
@@ -288,7 +295,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { anomalyThreshold: 0.8 } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			const validTypes = ['outlier', 'novelty', 'drift'];
@@ -305,7 +312,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('clusterable data') // inputData
 				.mockReturnValueOnce({ values: { numClusters: 3, clusteringMethod: 'kmeans' } }); // patternConfig
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -325,7 +332,7 @@ describe('PatternMiner Node', () => {
 					.mockReturnValueOnce('test data')
 					.mockReturnValueOnce({ values: { numClusters: 4, clusteringMethod: method } });
 
-				const result = await patternMiner.execute.call(mockExecuteFunctions);
+				const result = await patternMiner.execute.call(createContext());
 				const output = result[0][0].json;
 				
 				expect(output.config.clusteringMethod).toBe(method);
@@ -338,7 +345,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { numClusters: 5, clusteringMethod: 'kmeans' } });
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.qualityMetrics).toBeDefined();
@@ -354,7 +361,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('unknownMiningType');
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.error).toContain('Unknown mining type');
@@ -362,12 +369,13 @@ describe('PatternMiner Node', () => {
 
 		test('should continue on fail when configured', async () => {
 			mockExecuteFunctions.getNodeParameter = jest.fn()
+				.mockReturnValueOnce('frequentPatterns') // operation
 				.mockImplementation(() => {
 					throw new Error('Test error');
 				});
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0][0].json).toHaveProperty('error');
@@ -381,7 +389,7 @@ describe('PatternMiner Node', () => {
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: {} }); // Empty config
 
-			const result = await patternMiner.execute.call(mockExecuteFunctions);
+			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output).toBeDefined();

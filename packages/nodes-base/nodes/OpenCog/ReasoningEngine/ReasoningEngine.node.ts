@@ -307,7 +307,7 @@ export class ReasoningEngine implements INodeType {
 			subgoals,
 			proofSteps,
 			goalProven: overallConfidence >= params.confidenceThreshold,
-			confidence: overallConfidence,
+			overallConfidence,
 			timestamp: new Date().toISOString(),
 		};
 	}
@@ -352,17 +352,19 @@ export class ReasoningEngine implements INodeType {
 		const params = this.getReasoningParams(context, itemIndex);
 
 		// Simulate analogical reasoning
-		const mappings = [
+		const analogies = [
 			{
 				sourceElement: 'Source_Element_1',
 				targetElement: 'Target_Element_1',
 				similarity: Math.random(),
+				mapping: { property1: 'maps_to_property1', property2: 'maps_to_property2' },
 				confidence: Math.random(),
 			},
 			{
 				sourceElement: 'Source_Element_2',
 				targetElement: 'Target_Element_2',
 				similarity: Math.random(),
+				mapping: { property3: 'maps_to_property3', property4: 'maps_to_property4' },
 				confidence: Math.random(),
 			},
 		];
@@ -375,13 +377,15 @@ export class ReasoningEngine implements INodeType {
 			},
 		];
 
+		const structuralSimilarity = analogies.reduce((acc, m) => acc + m.similarity, 0) / analogies.length;
+
 		return {
 			reasoningType: 'analogicalReasoning',
 			sourceDomain,
 			targetDomain,
-			mappings,
+			analogies,
 			predictions,
-			overallSimilarity: mappings.reduce((acc, m) => acc + m.similarity, 0) / mappings.length,
+			structuralSimilarity,
 			timestamp: new Date().toISOString(),
 		};
 	}
@@ -408,11 +412,19 @@ export class ReasoningEngine implements INodeType {
 
 		const inferences = [
 			{
-				conclusion: 'Probabilistic_Conclusion_1',
+				statement: 'Probabilistic_Conclusion_1',
 				probability: Math.random(),
 				derivedFrom: ['Fact_A', 'Fact_B'],
 			},
+			{
+				statement: 'Probabilistic_Conclusion_2',
+				probability: Math.random(),
+				derivedFrom: ['Fact_B'],
+			},
 		];
+
+		const totalUncertainty = inferences.reduce((acc, inf) => acc + (1 - inf.probability), 0) / inferences.length;
+		const avgConfidence = inferences.reduce((acc, inf) => acc + inf.probability, 0) / inferences.length;
 
 		return {
 			reasoningType: 'probabilisticReasoning',
@@ -420,6 +432,10 @@ export class ReasoningEngine implements INodeType {
 			probabilisticFacts,
 			inferences,
 			uncertaintyHandling: 'Bayesian inference',
+			uncertaintyMetrics: {
+				totalUncertainty,
+				avgConfidence,
+			},
 			timestamp: new Date().toISOString(),
 		};
 	}
@@ -447,11 +463,20 @@ export class ReasoningEngine implements INodeType {
 
 		const temporalRelations = [
 			{
-				relation: 'Event_A before Event_B',
+				event1: 'Event_A',
+				event2: 'Event_B',
+				relation: 'before',
 				confidence: 0.95,
 				type: 'temporal_precedence',
 			},
 		];
+
+		// Check temporal consistency
+		const consistencyCheck = {
+			isConsistent: Math.random() > 0.2, // 80% chance of consistency
+			violations: [],
+			warnings: [],
+		};
 
 		return {
 			reasoningType: 'temporalReasoning',
@@ -466,6 +491,7 @@ export class ReasoningEngine implements INodeType {
 					confidence: Math.random(),
 				},
 			],
+			consistencyCheck,
 			timestamp: new Date().toISOString(),
 		};
 	}

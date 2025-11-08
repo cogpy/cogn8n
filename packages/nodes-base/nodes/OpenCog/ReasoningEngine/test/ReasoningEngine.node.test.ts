@@ -16,6 +16,13 @@ describe('ReasoningEngine Node', () => {
 		} as unknown as IExecuteFunctions;
 	});
 
+	// Helper function to create merged context for execute
+	const createContext = () => {
+		const context = Object.create(reasoningEngine);
+		Object.assign(context, mockExecuteFunctions);
+		return context;
+	};
+
 	describe('Node Properties', () => {
 		test('should have correct node properties', () => {
 			expect(reasoningEngine.description.name).toBe('reasoningEngine');
@@ -47,7 +54,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('If A then B. A is true.') // inputKnowledge
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.7, useUncertainty: true } }); // reasoningParams
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -66,7 +73,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps: 3, confidenceThreshold: 0.6, useUncertainty: false } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.steps.length).toBeGreaterThan(0);
@@ -88,7 +95,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			output.conclusions.forEach((conclusion: any) => {
@@ -105,7 +112,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('Prove C') // goalQuery
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.7, useUncertainty: true } }); // reasoningParams
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -124,7 +131,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test goal')
 				.mockReturnValueOnce({ values: { maxSteps: 4, confidenceThreshold: 0.5, useUncertainty: false } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.proofSteps).toBeDefined();
@@ -145,7 +152,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test goal')
 				.mockReturnValueOnce({ values: { maxSteps: 3, confidenceThreshold: 0.6, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output).toHaveProperty('goalProven');
@@ -163,7 +170,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('observed phenomenon') // goalQuery
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.7, useUncertainty: true } }); // reasoningParams
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -181,7 +188,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('observation')
 				.mockReturnValueOnce({ values: { maxSteps: 3, confidenceThreshold: 0.6, useUncertainty: false } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.hypotheses.length).toBeGreaterThan(0);
@@ -201,7 +208,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('observation')
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.5, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			// Verify hypotheses are sorted by plausibility (descending)
@@ -220,7 +227,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('target domain') // targetDomain
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.7, useUncertainty: true } }); // reasoningParams
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -239,7 +246,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('target')
 				.mockReturnValueOnce({ values: { maxSteps: 3, confidenceThreshold: 0.6, useUncertainty: false } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.analogies.length).toBeGreaterThan(0);
@@ -260,7 +267,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('target')
 				.mockReturnValueOnce({ values: { maxSteps: 4, confidenceThreshold: 0.5, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output).toHaveProperty('structuralSimilarity');
@@ -277,7 +284,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('probabilistic knowledge') // inputKnowledge
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.7, useUncertainty: true } }); // reasoningParams
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -294,7 +301,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps: 3, confidenceThreshold: 0.6, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.inferences.length).toBeGreaterThan(0);
@@ -313,7 +320,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps: 4, confidenceThreshold: 0.5, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output).toHaveProperty('uncertaintyMetrics');
@@ -329,7 +336,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('temporal knowledge') // inputKnowledge
 				.mockReturnValueOnce({ values: { maxSteps: 5, confidenceThreshold: 0.7, useUncertainty: true } }); // reasoningParams
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
@@ -346,7 +353,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps: 3, confidenceThreshold: 0.6, useUncertainty: false } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.temporalRelations.length).toBeGreaterThan(0);
@@ -366,7 +373,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps: 4, confidenceThreshold: 0.5, useUncertainty: true } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output).toHaveProperty('consistencyCheck');
@@ -381,7 +388,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('unknownReasoningType');
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			const output = result[0][0].json;
 			expect(output.error).toContain('Unknown reasoning type');
@@ -389,12 +396,13 @@ describe('ReasoningEngine Node', () => {
 
 		test('should continue on fail when configured', async () => {
 			mockExecuteFunctions.getNodeParameter = jest.fn()
+				.mockReturnValueOnce('forwardChaining') // reasoningType
 				.mockImplementation(() => {
 					throw new Error('Test error');
 				});
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			
 			expect(result).toHaveLength(1);
 			expect(result[0][0].json).toHaveProperty('error');
@@ -408,7 +416,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: {} }); // Empty config
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output).toBeDefined();
@@ -422,7 +430,7 @@ describe('ReasoningEngine Node', () => {
 				.mockReturnValueOnce('test knowledge')
 				.mockReturnValueOnce({ values: { maxSteps, confidenceThreshold: 0.5, useUncertainty: false } });
 
-			const result = await reasoningEngine.execute.call(mockExecuteFunctions);
+			const result = await reasoningEngine.execute.call(createContext());
 			const output = result[0][0].json;
 			
 			expect(output.steps.length).toBeLessThanOrEqual(maxSteps);
