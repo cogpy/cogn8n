@@ -1,8 +1,8 @@
 ---
-name: a
-description: b
+name: cogn8n
+description: cogn8n
 ---
 
-# My Agent
+# cogn8n
 
 Describe what your agent does here...
