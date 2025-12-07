@@ -1,0 +1,206 @@
+{
+  "name": "Multi-Agent Decision Making",
+  "description": "Demonstrates coordinated decision making using multiple cognitive agents",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {},
+      "position": [100, 300]
+    },
+    {
+      "id": "decision-input",
+      "name": "Decision Context",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "context",
+              "value": "Strategic decision: Should we expand to new market?"
+            },
+            {
+              "name": "data",
+              "value": "Market size: Large, Competition: Medium, Resources: Limited"
+            }
+          ]
+        }
+      },
+      "position": [300, 300]
+    },
+    {
+      "id": "goal-agent",
+      "name": "Goal-Oriented Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "goalOriented",
+        "agentName": "StrategicPlanner",
+        "inputStimulus": "={{ $json.context }}",
+        "goals": "Evaluate market potential\nAssess competitive landscape\nEvaluate resource requirements\nProvide strategic recommendation",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.7,
+            "memoryCapacity": 3000
+          }
+        }
+      },
+      "position": [500, 250]
+    },
+    {
+      "id": "learning-agent",
+      "name": "Learning Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "learning",
+        "agentName": "MarketAnalyst",
+        "inputStimulus": "={{ $json.context }}",
+        "goals": "Learn from market data\nAdapt analysis based on patterns\nImprove prediction accuracy",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.6,
+            "learningRate": 0.25,
+            "memoryCapacity": 5000,
+            "explorationFactor": 0.3
+          }
+        }
+      },
+      "position": [500, 400]
+    },
+    {
+      "id": "social-agent",
+      "name": "Social Coordinator",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "social",
+        "agentName": "DecisionCoordinator",
+        "inputStimulus": "Coordinate agent inputs for final decision",
+        "goals": "Synthesize agent recommendations\nResolve conflicts\nBuild consensus\nProvide unified decision",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.65,
+            "memoryCapacity": 4000
+          }
+        }
+      },
+      "position": [700, 300]
+    },
+    {
+      "id": "reasoning-engine",
+      "name": "Decision Reasoning",
+      "type": "n8n-nodes-base.reasoningEngine",
+      "parameters": {
+        "reasoningType": "abductiveReasoning",
+        "inputKnowledge": "Agent recommendations and market analysis",
+        "goalQuery": "Best expansion decision given constraints",
+        "reasoningParams": {
+          "values": {
+            "maxSteps": 5,
+            "confidenceThreshold": 0.7,
+            "maxResults": 3
+          }
+        }
+      },
+      "position": [900, 300]
+    },
+    {
+      "id": "final-decision",
+      "name": "Final Decision Output",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "decision",
+              "value": "={{ $json.operation }}"
+            },
+            {
+              "name": "confidence",
+              "value": "={{ $json.hypotheses[0].plausibility }}"
+            }
+          ]
+        }
+      },
+      "position": [1100, 300]
+    }
+  ],
+  "connections": {
+    "trigger": {
+      "main": [
+        {
+          "node": "decision-input",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "decision-input": {
+      "main": [
+        {
+          "node": "goal-agent",
+          "type": "main",
+          "index": 0
+        },
+        {
+          "node": "learning-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "goal-agent": {
+      "main": [
+        {
+          "node": "social-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "learning-agent": {
+      "main": [
+        {
+          "node": "social-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "social-agent": {
+      "main": [
+        {
+          "node": "reasoning-engine",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "reasoning-engine": {
+      "main": [
+        {
+          "node": "final-decision",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "id": "opencog",
+      "name": "OpenCog"
+    },
+    {
+      "id": "multi-agent",
+      "name": "Multi-Agent"
+    },
+    {
+      "id": "decision-making",
+      "name": "Decision Making"
+    }
+  ]
+}

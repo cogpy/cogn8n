@@ -1,0 +1,160 @@
+{
+  "name": "Knowledge Discovery Pipeline",
+  "description": "Discovers patterns from data and stores them as structured knowledge in AtomSpace",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {},
+      "position": [100, 200]
+    },
+    {
+      "id": "data-source",
+      "name": "Sample Data",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "data",
+              "value": "customer_A, product_1, product_2\ncustomer_B, product_1, product_3\ncustomer_C, product_2, product_3\ncustomer_D, product_1, product_2, product_3"
+            }
+          ]
+        }
+      },
+      "position": [300, 200]
+    },
+    {
+      "id": "pattern-miner-freq",
+      "name": "Find Frequent Patterns",
+      "type": "n8n-nodes-base.patternMiner",
+      "parameters": {
+        "miningType": "frequentPatterns",
+        "inputData": "={{ $json.data }}",
+        "patternConfig": {
+          "values": {
+            "minSupport": 0.5,
+            "maxPatternLength": 3
+          }
+        }
+      },
+      "position": [500, 200]
+    },
+    {
+      "id": "pattern-miner-assoc",
+      "name": "Discover Association Rules",
+      "type": "n8n-nodes-base.patternMiner",
+      "parameters": {
+        "miningType": "associationRules",
+        "inputData": "={{ $json.data }}",
+        "patternConfig": {
+          "values": {
+            "minSupport": 0.4,
+            "minConfidence": 0.7
+          }
+        }
+      },
+      "position": [700, 200]
+    },
+    {
+      "id": "atomspace-concepts",
+      "name": "Store Pattern Concepts",
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "ConceptNode",
+        "atomName": "={{ 'Pattern_' + $json.miningType }}",
+        "truthValue": {
+          "values": {
+            "strength": 0.85,
+            "confidence": 0.8
+          }
+        }
+      },
+      "position": [900, 200]
+    },
+    {
+      "id": "atomspace-relations",
+      "name": "Store Pattern Relations",
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "SimilarityLink",
+        "atomName": "Pattern_Relationships",
+        "truthValue": {
+          "values": {
+            "strength": 0.9,
+            "confidence": 0.85
+          }
+        }
+      },
+      "position": [1100, 200]
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        {
+          "node": "data-source",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "data-source": {
+      "main": [
+        {
+          "node": "pattern-miner-freq",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "pattern-miner-freq": {
+      "main": [
+        {
+          "node": "pattern-miner-assoc",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "pattern-miner-assoc": {
+      "main": [
+        {
+          "node": "atomspace-concepts",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "atomspace-concepts": {
+      "main": [
+        {
+          "node": "atomspace-relations",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "id": "opencog",
+      "name": "OpenCog"
+    },
+    {
+      "id": "pattern-mining",
+      "name": "Pattern Mining"
+    },
+    {
+      "id": "knowledge-discovery",
+      "name": "Knowledge Discovery"
+    }
+  ]
+}
