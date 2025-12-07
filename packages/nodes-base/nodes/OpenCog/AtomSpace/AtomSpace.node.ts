@@ -4,7 +4,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 export class AtomSpace implements INodeType {
 	description: INodeTypeDescription = {
@@ -35,10 +35,10 @@ export class AtomSpace implements INodeType {
 						action: 'Add an atom to the AtomSpace',
 					},
 					{
-						name: 'Query Atoms',
-						value: 'queryAtoms',
-						description: 'Query atoms from the AtomSpace',
-						action: 'Query atoms from the AtomSpace',
+						name: 'Get Truth Value',
+						value: 'getTruthValue',
+						description: 'Get the truth value of an atom',
+						action: 'Get truth value of an atom',
 					},
 					{
 						name: 'Pattern Match',
@@ -47,10 +47,10 @@ export class AtomSpace implements INodeType {
 						action: 'Perform pattern matching',
 					},
 					{
-						name: 'Get Truth Value',
-						value: 'getTruthValue',
-						description: 'Get the truth value of an atom',
-						action: 'Get truth value of an atom',
+						name: 'Query Atoms',
+						value: 'queryAtoms',
+						description: 'Query atoms from the AtomSpace',
+						action: 'Query atoms from the AtomSpace',
 					},
 					{
 						name: 'Set Truth Value',
@@ -78,14 +78,9 @@ export class AtomSpace implements INodeType {
 						description: 'Represents a concept or entity',
 					},
 					{
-						name: 'PredicateNode',
-						value: 'PredicateNode',
-						description: 'Represents a predicate or relation',
-					},
-					{
-						name: 'LinkNode',
-						value: 'LinkNode',
-						description: 'Represents a link between atoms',
+						name: 'EvaluationLink',
+						value: 'EvaluationLink',
+						description: 'Represents evaluation of a predicate',
 					},
 					{
 						name: 'InheritanceLink',
@@ -93,14 +88,19 @@ export class AtomSpace implements INodeType {
 						description: 'Represents inheritance relationship',
 					},
 					{
+						name: 'LinkNode',
+						value: 'LinkNode',
+						description: 'Represents a link between atoms',
+					},
+					{
+						name: 'PredicateNode',
+						value: 'PredicateNode',
+						description: 'Represents a predicate or relation',
+					},
+					{
 						name: 'SimilarityLink',
 						value: 'SimilarityLink',
 						description: 'Represents similarity relationship',
-					},
-					{
-						name: 'EvaluationLink',
-						value: 'EvaluationLink',
-						description: 'Represents evaluation of a predicate',
 					},
 				],
 			},
@@ -218,7 +218,9 @@ export class AtomSpace implements INodeType {
 						result = await (this as any).setTruthValue(this, i);
 						break;
 					default:
-						throw new Error(`Unknown operation: ${operation}`);
+						throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
+							itemIndex: i,
+						});
 				}
 
 				returnData.push({

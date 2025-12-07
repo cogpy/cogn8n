@@ -4,7 +4,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 export class CognitiveAgent implements INodeType {
 	description: INodeTypeDescription = {
@@ -29,6 +29,12 @@ export class CognitiveAgent implements INodeType {
 				default: 'generalPurpose',
 				options: [
 					{
+						name: 'Emotional Agent',
+						value: 'emotional',
+						description: 'Agent with emotional processing capabilities',
+						action: 'Create emotional agent',
+					},
+					{
 						name: 'General Purpose Agent',
 						value: 'generalPurpose',
 						description: 'General-purpose cognitive agent',
@@ -41,28 +47,22 @@ export class CognitiveAgent implements INodeType {
 						action: 'Create goal-oriented agent',
 					},
 					{
-						name: 'Reactive Agent',
-						value: 'reactive',
-						description: 'Agent that reacts to environmental changes',
-						action: 'Create reactive agent',
-					},
-					{
 						name: 'Learning Agent',
 						value: 'learning',
 						description: 'Agent that learns from experience',
 						action: 'Create learning agent',
 					},
 					{
+						name: 'Reactive Agent',
+						value: 'reactive',
+						description: 'Agent that reacts to environmental changes',
+						action: 'Create reactive agent',
+					},
+					{
 						name: 'Social Agent',
 						value: 'social',
 						description: 'Agent that interacts with other agents',
 						action: 'Create social agent',
-					},
-					{
-						name: 'Emotional Agent',
-						value: 'emotional',
-						description: 'Agent with emotional processing capabilities',
-						action: 'Create emotional agent',
 					},
 				],
 			},
@@ -222,7 +222,9 @@ export class CognitiveAgent implements INodeType {
 						result = await (this as any).processEmotionalAgent(this, i);
 						break;
 					default:
-						throw new Error(`Unknown agent type: ${agentType}`);
+						throw new NodeOperationError(this.getNode(), `Unknown agent type: ${agentType}`, {
+							itemIndex: i,
+						});
 				}
 
 				returnData.push({
