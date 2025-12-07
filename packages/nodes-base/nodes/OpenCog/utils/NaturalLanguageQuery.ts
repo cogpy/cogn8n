@@ -18,8 +18,9 @@ export class NaturalLanguageQueryParser {
 		const normalizedQuery = query.toLowerCase().trim();
 
 		// Pattern: "What is X?"
-		if (normalizedQuery.match(/^what is (.+)\??$/)) {
-			const concept = normalizedQuery.match(/^what is (.+)\??$/)![1];
+		let match = normalizedQuery.match(/^what is (.+)\??$/);
+		if (match) {
+			const concept = match[1];
 			return {
 				query,
 				pattern: `(Get (TypedVariable $x ConceptNode) (Inheritance (Concept "${concept}") $x))`,
@@ -29,10 +30,10 @@ export class NaturalLanguageQueryParser {
 		}
 
 		// Pattern: "Is X a Y?"
-		if (normalizedQuery.match(/^is (.+) a (.+)\??$/)) {
-			const matches = normalizedQuery.match(/^is (.+) a (.+)\??$/)!;
-			const concept1 = matches[1];
-			const concept2 = matches[2];
+		match = normalizedQuery.match(/^is (.+) a (.+)\??$/);
+		if (match) {
+			const concept1 = match[1];
+			const concept2 = match[2];
 			return {
 				query,
 				pattern: `(Get (Inheritance (Concept "${concept1}") (Concept "${concept2}")))`,
@@ -42,8 +43,9 @@ export class NaturalLanguageQueryParser {
 		}
 
 		// Pattern: "What are the properties of X?"
-		if (normalizedQuery.match(/^what are the properties of (.+)\??$/)) {
-			const concept = normalizedQuery.match(/^what are the properties of (.+)\??$/)![1];
+		match = normalizedQuery.match(/^what are the properties of (.+)\??$/);
+		if (match) {
+			const concept = match[1];
 			return {
 				query,
 				pattern: `(Get (TypedVariable $prop PredicateNode) (Evaluation $prop (Concept "${concept}")))`,
@@ -53,10 +55,10 @@ export class NaturalLanguageQueryParser {
 		}
 
 		// Pattern: "Find all X that Y"
-		if (normalizedQuery.match(/^find all (.+) that (.+)$/)) {
-			const matches = normalizedQuery.match(/^find all (.+) that (.+)$/)!;
-			const type = matches[1];
-			const condition = matches[2];
+		match = normalizedQuery.match(/^find all (.+) that (.+)$/);
+		if (match) {
+			const type = match[1];
+			const condition = match[2];
 			return {
 				query,
 				pattern: `(Get (TypedVariable $x ConceptNode) (And (Type $x "${type}") (Predicate "${condition}" $x)))`,
@@ -66,10 +68,10 @@ export class NaturalLanguageQueryParser {
 		}
 
 		// Pattern: "How is X related to Y?"
-		if (normalizedQuery.match(/^how is (.+) related to (.+)\??$/)) {
-			const matches = normalizedQuery.match(/^how is (.+) related to (.+)\??$/)!;
-			const concept1 = matches[1];
-			const concept2 = matches[2];
+		match = normalizedQuery.match(/^how is (.+) related to (.+)\??$/);
+		if (match) {
+			const concept1 = match[1];
+			const concept2 = match[2];
 			return {
 				query,
 				pattern: `(Get (TypedVariable $rel LinkNode) (Evaluation $rel (List (Concept "${concept1}") (Concept "${concept2}"))))`,
@@ -79,8 +81,9 @@ export class NaturalLanguageQueryParser {
 		}
 
 		// Pattern: "Show me X"
-		if (normalizedQuery.match(/^show me (.+)$/)) {
-			const concept = normalizedQuery.match(/^show me (.+)$/)![1];
+		match = normalizedQuery.match(/^show me (.+)$/);
+		if (match) {
+			const concept = match[1];
 			return {
 				query,
 				pattern: `(Get (Concept "${concept}"))`,
@@ -90,8 +93,9 @@ export class NaturalLanguageQueryParser {
 		}
 
 		// Pattern: "List all X"
-		if (normalizedQuery.match(/^list all (.+)$/)) {
-			const type = normalizedQuery.match(/^list all (.+)$/)![1];
+		match = normalizedQuery.match(/^list all (.+)$/);
+		if (match) {
+			const type = match[1];
 			return {
 				query,
 				pattern: `(Get (TypedVariable $x ConceptNode) (Type $x "${type}"))`,

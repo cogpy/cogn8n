@@ -183,11 +183,14 @@ export class CognitiveBenchmark {
 
 	/**
 	 * Helper: Get memory usage
+	 * Returns 0 when memory tracking is unavailable (e.g., browser environment)
 	 */
 	private getMemoryUsage(): number {
 		if (typeof process !== 'undefined' && process.memoryUsage) {
 			return process.memoryUsage().heapUsed;
 		}
+		// Return 0 when process.memoryUsage is unavailable
+		// Memory metrics will show 0 delta in non-Node.js environments
 		return 0;
 	}
 }
@@ -261,10 +264,16 @@ export class CognitiveProfiler {
 		this.profiles.clear();
 	}
 
+	/**
+	 * Helper: Get memory usage
+	 * Returns 0 when memory tracking is unavailable (e.g., browser environment)
+	 */
 	private getMemoryUsage(): number {
 		if (typeof process !== 'undefined' && process.memoryUsage) {
 			return process.memoryUsage().heapUsed;
 		}
+		// Return 0 when process.memoryUsage is unavailable
+		// Memory metrics will show 0 delta in non-Node.js environments
 		return 0;
 	}
 }

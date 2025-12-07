@@ -274,6 +274,8 @@ export class CognitiveVisualizer {
 			diagram += '    atomspace --> reasoning\n';
 		}
 		if (workflow.reasoning && workflow.agents) {
+			// Create individual connections from reasoning to each agent
+			// This allows for parallel agent processing from a single reasoning output
 			workflow.agents.forEach((_: any, idx: number) => {
 				diagram += `    reasoning --> agent${idx}\n`;
 			});
