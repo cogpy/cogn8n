@@ -11,6 +11,9 @@ describe('CognitiveAgent Node', () => {
 			getInputData: jest.fn().mockReturnValue([{ json: {} }]),
 			getNodeParameter: jest.fn(),
 			continueOnFail: jest.fn().mockReturnValue(false),
+			getNode: jest
+				.fn()
+				.mockReturnValue({ name: 'CognitiveAgent', type: 'n8n-nodes-base.cognitiveAgent' }),
 		} as unknown as IExecuteFunctions;
 	});
 

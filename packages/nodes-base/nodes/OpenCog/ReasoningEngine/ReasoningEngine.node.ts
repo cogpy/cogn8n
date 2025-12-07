@@ -4,7 +4,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 export class ReasoningEngine implements INodeType {
 	description: INodeTypeDescription = {
@@ -29,18 +29,6 @@ export class ReasoningEngine implements INodeType {
 				default: 'forwardChaining',
 				options: [
 					{
-						name: 'Forward Chaining',
-						value: 'forwardChaining',
-						description: 'Forward inference from premises to conclusions',
-						action: 'Perform forward chaining inference',
-					},
-					{
-						name: 'Backward Chaining',
-						value: 'backwardChaining',
-						description: 'Backward inference from goals to premises',
-						action: 'Perform backward chaining inference',
-					},
-					{
 						name: 'Abductive Reasoning',
 						value: 'abductiveReasoning',
 						description: 'Inference to the best explanation',
@@ -51,6 +39,18 @@ export class ReasoningEngine implements INodeType {
 						value: 'analogicalReasoning',
 						description: 'Reasoning by analogy and similarity',
 						action: 'Perform analogical reasoning',
+					},
+					{
+						name: 'Backward Chaining',
+						value: 'backwardChaining',
+						description: 'Backward inference from goals to premises',
+						action: 'Perform backward chaining inference',
+					},
+					{
+						name: 'Forward Chaining',
+						value: 'forwardChaining',
+						description: 'Forward inference from premises to conclusions',
+						action: 'Perform forward chaining inference',
 					},
 					{
 						name: 'Probabilistic Reasoning',
@@ -205,7 +205,13 @@ export class ReasoningEngine implements INodeType {
 						result = await (this as any).performTemporalReasoning(this, i);
 						break;
 					default:
-						throw new Error(`Unknown reasoning type: ${reasoningType}`);
+						throw new NodeOperationError(
+							this.getNode(),
+							`Unknown reasoning type: ${reasoningType}`,
+							{
+								itemIndex: i,
+							},
+						);
 				}
 
 				returnData.push({
@@ -290,7 +296,7 @@ export class ReasoningEngine implements INodeType {
 				proofSteps.push({
 					step: i + 1,
 					goal: subgoal.goal,
-					proof: `Proven by rule application`,
+					proof: 'Proven by rule application',
 					confidence: subgoal.confidence,
 				});
 			}
@@ -325,7 +331,7 @@ export class ReasoningEngine implements INodeType {
 		for (let i = 0; i < Math.min(params.maxResults, 3); i++) {
 			hypotheses.push({
 				hypothesis: `Hypothesis_${i + 1}: Explains ${goalQuery}`,
-				explanation: `This hypothesis explains the observation through...`,
+				explanation: 'This hypothesis explains the observation through...',
 				plausibility: Math.random(),
 				supportingEvidence: [`Evidence_${i + 1}a`, `Evidence_${i + 1}b`],
 			});

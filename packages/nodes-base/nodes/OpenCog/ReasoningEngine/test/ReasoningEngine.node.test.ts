@@ -1,5 +1,3 @@
-import type { INodeTypes } from 'n8n-workflow';
-import { NodeHelpers } from 'n8n-workflow';
 import type { IExecuteFunctions } from 'n8n-workflow';
 import { ReasoningEngine } from '../ReasoningEngine.node';
 
@@ -13,6 +11,9 @@ describe('ReasoningEngine Node', () => {
 			getInputData: jest.fn().mockReturnValue([{ json: {} }]),
 			getNodeParameter: jest.fn(),
 			continueOnFail: jest.fn().mockReturnValue(false),
+			getNode: jest
+				.fn()
+				.mockReturnValue({ name: 'ReasoningEngine', type: 'n8n-nodes-base.reasoningEngine' }),
 		} as unknown as IExecuteFunctions;
 	});
 

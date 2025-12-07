@@ -1,5 +1,3 @@
-import type { INodeTypes } from 'n8n-workflow';
-import { NodeHelpers } from 'n8n-workflow';
 import type { IExecuteFunctions } from 'n8n-workflow';
 import { PatternMiner } from '../PatternMiner.node';
 
@@ -13,6 +11,9 @@ describe('PatternMiner Node', () => {
 			getInputData: jest.fn().mockReturnValue([{ json: {} }]),
 			getNodeParameter: jest.fn(),
 			continueOnFail: jest.fn().mockReturnValue(false),
+			getNode: jest
+				.fn()
+				.mockReturnValue({ name: 'PatternMiner', type: 'n8n-nodes-base.patternMiner' }),
 		} as unknown as IExecuteFunctions;
 	});
 

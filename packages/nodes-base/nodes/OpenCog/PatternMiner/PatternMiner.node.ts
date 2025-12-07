@@ -4,7 +4,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 export class PatternMiner implements INodeType {
 	description: INodeTypeDescription = {
@@ -29,10 +29,10 @@ export class PatternMiner implements INodeType {
 				default: 'frequentPatterns',
 				options: [
 					{
-						name: 'Frequent Patterns',
-						value: 'frequentPatterns',
-						description: 'Mine frequently occurring patterns',
-						action: 'Mine frequent patterns',
+						name: 'Anomaly Detection',
+						value: 'anomalyDetection',
+						description: 'Detect anomalous patterns and outliers',
+						action: 'Detect anomalous patterns',
 					},
 					{
 						name: 'Association Rules',
@@ -41,28 +41,28 @@ export class PatternMiner implements INodeType {
 						action: 'Discover association rules',
 					},
 					{
-						name: 'Sequential Patterns',
-						value: 'sequentialPatterns',
-						description: 'Find patterns in sequences and temporal data',
-						action: 'Find sequential patterns',
-					},
-					{
 						name: 'Causal Patterns',
 						value: 'causalPatterns',
 						description: 'Identify causal relationships and patterns',
 						action: 'Identify causal patterns',
 					},
 					{
-						name: 'Anomaly Detection',
-						value: 'anomalyDetection',
-						description: 'Detect anomalous patterns and outliers',
-						action: 'Detect anomalous patterns',
-					},
-					{
 						name: 'Concept Formation',
 						value: 'conceptFormation',
 						description: 'Form new concepts from pattern clusters',
 						action: 'Form new concepts',
+					},
+					{
+						name: 'Frequent Patterns',
+						value: 'frequentPatterns',
+						description: 'Mine frequently occurring patterns',
+						action: 'Mine frequent patterns',
+					},
+					{
+						name: 'Sequential Patterns',
+						value: 'sequentialPatterns',
+						description: 'Find patterns in sequences and temporal data',
+						action: 'Find sequential patterns',
 					},
 				],
 			},
@@ -222,7 +222,9 @@ export class PatternMiner implements INodeType {
 						result = await (this as any).formConcepts(this, i);
 						break;
 					default:
-						throw new Error(`Unknown mining type: ${miningType}`);
+						throw new NodeOperationError(this.getNode(), `Unknown mining type: ${miningType}`, {
+							itemIndex: i,
+						});
 				}
 
 				returnData.push({
@@ -437,7 +439,7 @@ export class PatternMiner implements INodeType {
 				anomalyScore: Math.max(config.anomalyThreshold, Math.random()),
 				anomalyType: ['outlier', 'novelty', 'drift'][Math.floor(Math.random() * 3)],
 				deviation: Math.random() * 10,
-				explanation: `Deviates significantly from normal pattern`,
+				explanation: 'Deviates significantly from normal pattern',
 				confidence: Math.random(),
 			});
 		}

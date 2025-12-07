@@ -1,0 +1,223 @@
+{
+  "name": "Anomaly Detection and Analysis",
+  "description": "Detects anomalies in data streams and performs causal analysis",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Data Stream Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {},
+      "position": [100, 300]
+    },
+    {
+      "id": "input-data",
+      "name": "Monitoring Data",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "metrics",
+              "value": "cpu_usage: 75, 80, 82, 95, 85, 78\nmemory_usage: 60, 65, 63, 88, 67, 64\nresponse_time: 120, 125, 130, 250, 135, 128"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $now }}"
+            }
+          ]
+        }
+      },
+      "position": [300, 300]
+    },
+    {
+      "id": "anomaly-detector",
+      "name": "Detect Anomalies",
+      "type": "n8n-nodes-base.patternMiner",
+      "parameters": {
+        "miningType": "anomalyDetection",
+        "inputData": "={{ $json.metrics }}",
+        "patternConfig": {
+          "values": {
+            "anomalyThreshold": 0.85
+          }
+        }
+      },
+      "position": [500, 300]
+    },
+    {
+      "id": "causal-analysis",
+      "name": "Causal Pattern Analysis",
+      "type": "n8n-nodes-base.patternMiner",
+      "parameters": {
+        "miningType": "causalPatterns",
+        "inputData": "={{ $json.metrics }}",
+        "patternConfig": {
+          "values": {
+            "minSupport": 0.6,
+            "windowSize": 5
+          }
+        }
+      },
+      "position": [700, 300]
+    },
+    {
+      "id": "temporal-reasoning",
+      "name": "Temporal Reasoning",
+      "type": "n8n-nodes-base.reasoningEngine",
+      "parameters": {
+        "reasoningType": "temporalReasoning",
+        "inputKnowledge": "Anomaly detected in system metrics with temporal patterns",
+        "reasoningParams": {
+          "values": {
+            "maxSteps": 5,
+            "confidenceThreshold": 0.7
+          }
+        }
+      },
+      "position": [900, 300]
+    },
+    {
+      "id": "reactive-agent",
+      "name": "Reactive Response Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "reactive",
+        "agentName": "AlertResponder",
+        "inputStimulus": "={{ 'Anomaly detected: ' + $json.operation }}",
+        "goals": "Quickly assess anomaly severity\nDetermine immediate actions\nGenerate alert response",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.8,
+            "memoryCapacity": 2000
+          }
+        }
+      },
+      "position": [1100, 250]
+    },
+    {
+      "id": "learning-agent",
+      "name": "Adaptive Learning Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "learning",
+        "agentName": "AnomalyLearner",
+        "inputStimulus": "Learn from anomaly patterns",
+        "goals": "Update anomaly detection model\nImprove false positive reduction\nAdapt thresholds based on patterns",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.6,
+            "learningRate": 0.2,
+            "memoryCapacity": 5000,
+            "explorationFactor": 0.3
+          }
+        }
+      },
+      "position": [1100, 400]
+    },
+    {
+      "id": "store-knowledge",
+      "name": "Store Anomaly Knowledge",
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "ConceptNode",
+        "atomName": "={{ 'Anomaly_' + $now.format('YYYY-MM-DD_HH-mm-ss') }}",
+        "truthValue": {
+          "values": {
+            "strength": "={{ $json.agentAnalysis?.confidence || 0.8 }}",
+            "confidence": 0.85
+          }
+        }
+      },
+      "position": [1300, 300]
+    }
+  ],
+  "connections": {
+    "trigger": {
+      "main": [
+        {
+          "node": "input-data",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "input-data": {
+      "main": [
+        {
+          "node": "anomaly-detector",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "anomaly-detector": {
+      "main": [
+        {
+          "node": "causal-analysis",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "causal-analysis": {
+      "main": [
+        {
+          "node": "temporal-reasoning",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "temporal-reasoning": {
+      "main": [
+        {
+          "node": "reactive-agent",
+          "type": "main",
+          "index": 0
+        },
+        {
+          "node": "learning-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "reactive-agent": {
+      "main": [
+        {
+          "node": "store-knowledge",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "learning-agent": {
+      "main": [
+        {
+          "node": "store-knowledge",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "id": "opencog",
+      "name": "OpenCog"
+    },
+    {
+      "id": "anomaly-detection",
+      "name": "Anomaly Detection"
+    },
+    {
+      "id": "monitoring",
+      "name": "Monitoring"
+    }
+  ]
+}
