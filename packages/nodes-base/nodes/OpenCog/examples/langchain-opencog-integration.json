@@ -1,0 +1,192 @@
+{
+  "name": "LangChain + OpenCog Hybrid AI",
+  "description": "Demonstrates integration of LangChain AI agents with OpenCog cognitive reasoning for hybrid symbolic-neural intelligence",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Webhook Input",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cognitive-ai",
+        "responseMode": "responseNode"
+      },
+      "position": [100, 300]
+    },
+    {
+      "id": "extract-query",
+      "name": "Extract Query",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "query",
+              "value": "={{ $json.body.query }}"
+            },
+            {
+              "name": "context",
+              "value": "={{ $json.body.context }}"
+            }
+          ]
+        }
+      },
+      "position": [300, 300]
+    },
+    {
+      "id": "atomspace-store",
+      "name": "Store in Knowledge Base",
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "ConceptNode",
+        "atomName": "={{ $json.query }}",
+        "truthValue": {
+          "values": {
+            "strength": 0.85,
+            "confidence": 0.75
+          }
+        }
+      },
+      "position": [500, 200]
+    },
+    {
+      "id": "pattern-analysis",
+      "name": "Analyze Patterns",
+      "type": "n8n-nodes-base.patternMiner",
+      "parameters": {
+        "miningType": "associationRules",
+        "inputData": "={{ $json.query }} {{ $json.context }}",
+        "patternConfig": {
+          "values": {
+            "minSupport": 0.2,
+            "minConfidence": 0.6,
+            "maxPatternLength": 4
+          }
+        }
+      },
+      "position": [500, 300]
+    },
+    {
+      "id": "cognitive-reasoning",
+      "name": "Apply Reasoning",
+      "type": "n8n-nodes-base.reasoningEngine",
+      "parameters": {
+        "reasoningType": "analogical",
+        "inputKnowledge": "={{ $json.patterns }}",
+        "reasoningParams": {
+          "values": {
+            "maxSteps": 6,
+            "confidenceThreshold": 0.65,
+            "useUncertainty": true
+          }
+        }
+      },
+      "position": [700, 300]
+    },
+    {
+      "id": "cognitive-agent-process",
+      "name": "Cognitive Processing",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "general",
+        "agentName": "HybridAgent",
+        "inputStimulus": "={{ $json.conclusions }}",
+        "goals": "Integrate symbolic reasoning\nCombine with neural insights\nGenerate coherent response\nLearn from interaction",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.6,
+            "learningRate": 0.22,
+            "memoryCapacity": 4500,
+            "explorationFactor": 0.38
+          }
+        }
+      },
+      "position": [900, 300]
+    },
+    {
+      "id": "respond",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ result: $json, timestamp: new Date().toISOString() }) }}"
+      },
+      "position": [1100, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        {
+          "node": "extract-query",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "extract-query": {
+      "main": [
+        {
+          "node": "atomspace-store",
+          "type": "main",
+          "index": 0
+        },
+        {
+          "node": "pattern-analysis",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "pattern-analysis": {
+      "main": [
+        {
+          "node": "cognitive-reasoning",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "cognitive-reasoning": {
+      "main": [
+        {
+          "node": "cognitive-agent-process",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "cognitive-agent-process": {
+      "main": [
+        {
+          "node": "respond",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "id": "opencog",
+      "name": "OpenCog"
+    },
+    {
+      "id": "langchain",
+      "name": "LangChain"
+    },
+    {
+      "id": "hybrid-ai",
+      "name": "Hybrid AI"
+    }
+  ],
+  "triggerCount": 0,
+  "versionId": "1"
+}
