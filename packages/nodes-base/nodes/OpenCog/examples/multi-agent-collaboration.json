@@ -1,0 +1,235 @@
+{
+  "name": "Multi-Agent Cognitive Collaboration",
+  "description": "Demonstrates multiple cognitive agents working together to solve complex problems through social interaction and knowledge sharing",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "start-trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "parameters": {},
+      "position": [100, 300]
+    },
+    {
+      "id": "shared-atomspace",
+      "name": "Shared Knowledge Base",
+      "type": "n8n-nodes-base.atomSpace",
+      "parameters": {
+        "operation": "addAtom",
+        "atomType": "ConceptNode",
+        "atomName": "SharedKnowledge",
+        "truthValue": {
+          "values": {
+            "strength": 1.0,
+            "confidence": 0.9
+          }
+        }
+      },
+      "position": [300, 300]
+    },
+    {
+      "id": "goal-agent",
+      "name": "Goal-Oriented Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "goalOriented",
+        "agentName": "PlannerAgent",
+        "inputStimulus": "Analyze problem and create action plan",
+        "goals": "Identify objectives\nBreak down into sub-goals\nSequence actions\nMonitor progress",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.7,
+            "learningRate": 0.15,
+            "memoryCapacity": 3000,
+            "explorationFactor": 0.3
+          }
+        }
+      },
+      "position": [500, 200]
+    },
+    {
+      "id": "learning-agent",
+      "name": "Learning Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "learning",
+        "agentName": "KnowledgeAgent",
+        "inputStimulus": "Extract patterns and learn from data",
+        "goals": "Identify patterns\nUpdate knowledge base\nImprove predictions\nAdapt strategies",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.6,
+            "learningRate": 0.25,
+            "memoryCapacity": 5000,
+            "explorationFactor": 0.5
+          }
+        }
+      },
+      "position": [500, 400]
+    },
+    {
+      "id": "social-agent",
+      "name": "Social Coordinator Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "social",
+        "agentName": "CoordinatorAgent",
+        "inputStimulus": "Coordinate agent interactions and knowledge sharing",
+        "goals": "Facilitate communication\nResolve conflicts\nShare insights\nSynchronize actions",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.65,
+            "learningRate": 0.18,
+            "memoryCapacity": 4000,
+            "explorationFactor": 0.35
+          }
+        }
+      },
+      "position": [700, 300]
+    },
+    {
+      "id": "pattern-discovery",
+      "name": "Discover Patterns",
+      "type": "n8n-nodes-base.patternMiner",
+      "parameters": {
+        "miningType": "frequentPatterns",
+        "inputData": "{{ $json.patterns }}",
+        "patternConfig": {
+          "values": {
+            "minSupport": 0.25,
+            "maxPatternLength": 6
+          }
+        }
+      },
+      "position": [900, 300]
+    },
+    {
+      "id": "reasoning-synthesis",
+      "name": "Synthesize Conclusions",
+      "type": "n8n-nodes-base.reasoningEngine",
+      "parameters": {
+        "reasoningType": "abductive",
+        "inputKnowledge": "{{ $json.knowledge }}",
+        "reasoningParams": {
+          "values": {
+            "maxSteps": 8,
+            "confidenceThreshold": 0.65,
+            "useUncertainty": true
+          }
+        }
+      },
+      "position": [1100, 300]
+    },
+    {
+      "id": "emotional-agent",
+      "name": "Emotional Context Agent",
+      "type": "n8n-nodes-base.cognitiveAgent",
+      "parameters": {
+        "agentType": "emotional",
+        "agentName": "ContextAgent",
+        "inputStimulus": "Evaluate emotional context and sentiment",
+        "goals": "Assess sentiment\nMonitor satisfaction\nAdjust approach\nProvide empathy",
+        "agentConfig": {
+          "values": {
+            "attentionThreshold": 0.55,
+            "learningRate": 0.2,
+            "memoryCapacity": 2500,
+            "explorationFactor": 0.4
+          }
+        }
+      },
+      "position": [1300, 300]
+    }
+  ],
+  "connections": {
+    "start-trigger": {
+      "main": [
+        {
+          "node": "shared-atomspace",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "shared-atomspace": {
+      "main": [
+        {
+          "node": "goal-agent",
+          "type": "main",
+          "index": 0
+        },
+        {
+          "node": "learning-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "goal-agent": {
+      "main": [
+        {
+          "node": "social-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "learning-agent": {
+      "main": [
+        {
+          "node": "social-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "social-agent": {
+      "main": [
+        {
+          "node": "pattern-discovery",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "pattern-discovery": {
+      "main": [
+        {
+          "node": "reasoning-synthesis",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    },
+    "reasoning-synthesis": {
+      "main": [
+        {
+          "node": "emotional-agent",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "id": "opencog",
+      "name": "OpenCog"
+    },
+    {
+      "id": "multi-agent",
+      "name": "Multi-Agent"
+    },
+    {
+      "id": "collaboration",
+      "name": "Collaboration"
+    }
+  ],
+  "triggerCount": 0,
+  "versionId": "1"
+}

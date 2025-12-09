@@ -130,8 +130,8 @@ Raw Data → Pattern Mining → Causal Analysis → Anomaly Detection → Insigh
 Comprehensive test coverage includes:
 
 - **Unit Tests**: Individual node operation validation
-- **Integration Tests**: Multi-node workflow testing  
-- **Performance Tests**: Scalability and response time validation
+- **Integration Tests**: Multi-node workflow testing using the WorkflowTestFramework
+- **Performance Tests**: Scalability and response time validation with benchmarking tools
 - **Cognitive Tests**: Reasoning accuracy and learning effectiveness
 
 Test files located in respective `/test/` directories:
@@ -139,6 +139,10 @@ Test files located in respective `/test/` directories:
 - `CognitiveAgent/test/CognitiveAgent.node.test.ts`
 - `PatternMiner/test/PatternMiner.node.test.ts`
 - `ReasoningEngine/test/ReasoningEngine.node.test.ts`
+- `test/integration/` - Integration test framework and test cases
+
+For integration testing documentation, see:
+`packages/nodes-base/nodes/OpenCog/test/integration/README.md`
 
 ## Workflow Templates
 
@@ -172,6 +176,54 @@ Test files located in respective `/test/` directories:
 - **Parallelization**: Leverage multi-threading for intensive cognitive operations
 - **Optimization**: Profile and optimize critical cognitive processing paths
 
+## Recent Enhancements
+
+### Completed Features
+
+1. **Natural Language Query Interface** ✓
+   - Natural language to AtomSpace query translation
+   - Support for common query patterns (What is X?, Is X a Y?, etc.)
+   - Context-aware query enhancement
+   - Pattern validation utilities
+   - See: `packages/nodes-base/nodes/OpenCog/utils/NaturalLanguageQuery.ts`
+
+2. **Advanced Visualization Tools** ✓
+   - Mermaid diagram generation for AtomSpace structures
+   - Reasoning chain visualization
+   - Multi-agent network diagrams
+   - Pattern mining result charts
+   - Performance metrics visualization
+   - See: `packages/nodes-base/nodes/OpenCog/utils/CognitiveVisualizer.ts`
+
+3. **Performance Benchmarking Framework** ✓
+   - Execution time and memory tracking
+   - Throughput measurement
+   - Aggregate performance metrics
+   - Report generation (Markdown, JSON, CSV)
+   - Detailed profiling support
+   - See: `packages/nodes-base/nodes/OpenCog/utils/PerformanceBenchmark.ts`
+
+4. **Comprehensive Workflow Examples** ✓
+   - Multi-agent collaboration workflow
+   - LangChain + OpenCog hybrid AI integration
+   - Complete cognitive processing pipeline
+   - See: `packages/nodes-base/nodes/OpenCog/examples/`
+
+5. **Integration Testing Framework** ✓
+   - Workflow test runner
+   - Standard test cases for common patterns
+   - Output validation and assertions
+   - Performance tracking
+   - Test report generation
+   - See: `packages/nodes-base/nodes/OpenCog/test/integration/`
+
+6. **Comprehensive Usage Documentation** ✓
+   - Detailed usage guide with examples
+   - Node reference documentation
+   - Common workflow patterns
+   - Best practices and troubleshooting
+   - See: `packages/nodes-base/nodes/OpenCog/USAGE_GUIDE.md`
+
 ## Future Enhancements
 
 ### Roadmap Items
@@ -180,26 +232,31 @@ Test files located in respective `/test/` directories:
    - Connect to actual OpenCog server instances
    - Distributed cognitive processing
    - Persistent AtomSpace storage
+   - Status: Planned
 
-2. **Advanced Visualization**
-   - Interactive AtomSpace browser
-   - Reasoning chain visualization  
-   - Agent behavior monitoring dashboards
-
-3. **Natural Language Interface**
-   - Direct natural language interaction with AtomSpace
-   - Conversational query interface
-   - Automated knowledge extraction from text
-
-4. **Machine Learning Integration**
+2. **Machine Learning Integration**
    - Deep learning model integration
    - Neural-symbolic hybrid systems
    - Automated feature learning from patterns
+   - Status: Planned
 
-5. **Distributed Cognition**
+3. **Distributed Cognition**
    - Multi-node cognitive processing
    - Federated learning across instances
    - Cognitive load balancing
+   - Status: Planned
+
+4. **Enhanced LangChain Integration**
+   - Direct LangChain agent interoperability
+   - Shared memory between LangChain and OpenCog
+   - Hybrid reasoning pipelines
+   - Status: In Progress
+
+5. **AtomSpace Persistence**
+   - Database backend for AtomSpace
+   - Import/export utilities
+   - Version control for knowledge bases
+   - Status: Planned
 
 ## Security Considerations
 
@@ -234,3 +291,11 @@ To contribute to the OpenCog integration:
 - [AtomSpace Documentation](https://wiki.opencog.org/w/AtomSpace)
 - [n8n Node Development Guide](https://docs.n8n.io/integrations/creating-nodes/)
 - [Cognitive Architecture Patterns](https://wiki.opencog.org/w/Cognitive_Architecture)
+
+### Internal Documentation
+
+- [Usage Guide](packages/nodes-base/nodes/OpenCog/USAGE_GUIDE.md) - Comprehensive usage documentation
+- [Utilities README](packages/nodes-base/nodes/OpenCog/utils/README.md) - Utility functions documentation
+- [Integration Tests](packages/nodes-base/nodes/OpenCog/test/integration/README.md) - Testing framework documentation
+- [Cognitive Architecture Diagram](COGNITIVE_ARCHITECTURE_DIAGRAM.md) - Visual architecture overview
+- [Example Workflows](packages/nodes-base/nodes/OpenCog/examples/) - Pre-built workflow examples

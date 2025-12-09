@@ -118,6 +118,74 @@ This directory contains example workflows demonstrating various OpenCog cognitiv
 
 ---
 
+### 5. Multi-Agent Collaboration (`multi-agent-collaboration.json`)
+
+**Purpose**: Demonstrates multiple cognitive agents working together to solve complex problems through coordination and knowledge sharing.
+
+**What it does**:
+- Creates a shared knowledge base for agent collaboration
+- Deploys specialized agents (goal-oriented, learning, social, emotional)
+- Coordinates agent interactions through a social coordinator
+- Processes collective intelligence through pattern discovery and reasoning
+- Evaluates emotional context for improved decision-making
+
+**Use cases**:
+- Complex problem solving requiring multiple perspectives
+- Collaborative decision-making systems
+- Multi-agent simulation and modeling
+- Distributed cognitive processing
+- Team coordination and task allocation
+
+**Key nodes**:
+- 1x AtomSpace node (shared knowledge base)
+- 4x Cognitive Agent nodes (goal-oriented, learning, social, emotional)
+- 1x Pattern Miner node (collective pattern discovery)
+- 1x Reasoning Engine node (synthesis of conclusions)
+
+**Configuration tips**:
+- Adjust agent parameters based on specialization needs
+- Use social agents with higher attention thresholds for coordination
+- Set learning agents with higher exploration factors
+- Configure emotional agents with appropriate sensitivity
+
+---
+
+### 6. LangChain + OpenCog Hybrid AI (`langchain-opencog-integration.json`)
+
+**Purpose**: Demonstrates integration of LangChain AI agents with OpenCog cognitive reasoning for hybrid symbolic-neural intelligence.
+
+**What it does**:
+- Receives queries via webhook for real-time processing
+- Stores knowledge in AtomSpace for symbolic representation
+- Analyzes patterns using association rule mining
+- Applies analogical reasoning for insights
+- Processes through cognitive agent combining symbolic and neural approaches
+- Returns structured responses with integrated intelligence
+
+**Use cases**:
+- Hybrid AI systems combining neural and symbolic reasoning
+- Natural language understanding with structured knowledge
+- Conversational AI with cognitive reasoning capabilities
+- Knowledge-augmented language models
+- Semantic search and question answering
+
+**Key nodes**:
+- 1x Webhook trigger (input)
+- 1x Set node (data extraction)
+- 1x AtomSpace node (knowledge storage)
+- 1x Pattern Miner node (association analysis)
+- 1x Reasoning Engine node (analogical reasoning)
+- 1x Cognitive Agent node (hybrid processing)
+- 1x Respond to Webhook node (output)
+
+**Configuration tips**:
+- Use analogical reasoning for cross-domain knowledge transfer
+- Set appropriate confidence thresholds for reasoning (0.65+)
+- Configure cognitive agent with balanced learning/exploration
+- Optimize for real-time response requirements
+
+---
+
 ## How to Use These Workflows
 
 ### Importing Workflows
