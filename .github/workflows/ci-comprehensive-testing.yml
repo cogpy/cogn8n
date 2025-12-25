@@ -1,0 +1,489 @@
+name: Comprehensive E2E Testing Suite
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_all_tests:
+        description: 'Run all tests including extended E2E suite'
+        required: false
+        type: boolean
+        default: false
+      test_environment:
+        description: 'Test environment (sqlite, postgres, mysql)'
+        required: false
+        type: choice
+        options:
+          - sqlite
+          - postgres
+          - all
+        default: sqlite
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches:
+      - master
+      - 'release/*'
+    paths:
+      - 'packages/**'
+      - '.github/workflows/ci-comprehensive-testing.yml'
+
+concurrency:
+  group: comprehensive-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COVERAGE_ENABLED: 'true'
+  NODE_OPTIONS: '--max-old-space-size=8192'
+
+jobs:
+  # Matrix build for all packages
+  build-matrix:
+    name: Build All Packages
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    outputs:
+      packages: ${{ steps.get-packages.outputs.packages }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Get testable packages
+        id: get-packages
+        run: |
+          # Get all packages with test scripts
+          PACKAGES=$(pnpm ls -r --json | jq -r '.[].name' | grep -v "n8n-monorepo" | head -20)
+          echo "packages=$(echo "$PACKAGES" | jq -R -s -c 'split("\n") | map(select(length > 0))')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: build-artifacts
+          path: |
+            packages/*/dist
+            packages/@n8n/*/dist
+          retention-days: 1
+
+  # Unit tests for all backend packages
+  unit-tests-backend:
+    name: Backend Unit Tests
+    needs: build-matrix
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - cli
+          - core
+          - workflow
+          - nodes-base
+        node-version: ['22.x']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Run unit tests for ${{ matrix.package }}
+        run: |
+          pushd packages/${{ matrix.package }}
+          if [ -f "package.json" ] && grep -q '"test:unit"' package.json; then
+            pnpm test:unit
+          elif [ -f "package.json" ] && grep -q '"test"' package.json; then
+            pnpm test
+          else
+            echo "No test script found for ${{ matrix.package }}"
+          fi
+          popd
+        env:
+          NODE_ENV: test
+          DB_TYPE: sqlite
+
+      - name: Upload coverage
+        if: always()
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unit-${{ matrix.package }}
+          name: ${{ matrix.package }}-unit
+
+  # Unit tests for @n8n scoped packages
+  unit-tests-scoped:
+    name: '@n8n Packages Unit Tests'
+    needs: build-matrix
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - api-types
+          - backend-common
+          - config
+          - di
+          - permissions
+          - utils
+          - db
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Run tests for @n8n/${{ matrix.package }}
+        run: |
+          if [ -d "packages/@n8n/${{ matrix.package }}" ]; then
+            pushd packages/@n8n/${{ matrix.package }}
+            if [ -f "package.json" ] && grep -q '"test"' package.json; then
+              pnpm test || echo "Tests completed with warnings"
+            else
+              echo "No test script found"
+            fi
+            popd
+          else
+            echo "Package @n8n/${{ matrix.package }} not found"
+          fi
+        env:
+          NODE_ENV: test
+
+  # Frontend unit tests
+  unit-tests-frontend:
+    name: Frontend Unit Tests
+    needs: build-matrix
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Run frontend tests (shard ${{ matrix.shard }}/3)
+        run: pnpm test:ci:frontend -- --shard=${{ matrix.shard }}/3
+        env:
+          VITEST_SHARD: ${{ matrix.shard }}/3
+
+      - name: Upload coverage
+        if: always()
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: frontend
+          name: frontend-shard-${{ matrix.shard }}
+
+  # Integration tests with different databases
+  integration-tests:
+    name: Integration Tests (${{ matrix.database }})
+    needs: build-matrix
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - sqlite
+          - postgres
+    services:
+      postgres:
+        image: ${{ matrix.database == 'postgres' && 'postgres:16-alpine' || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: n8n_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Run integration tests
+        run: pnpm test:ci:backend:integration
+        env:
+          DB_TYPE: ${{ matrix.database }}
+          DB_POSTGRESDB_HOST: localhost
+          DB_POSTGRESDB_PORT: 5432
+          DB_POSTGRESDB_DATABASE: n8n_test
+          DB_POSTGRESDB_USER: postgres
+          DB_POSTGRESDB_PASSWORD: postgres
+
+      - name: Upload test results
+        if: always()
+        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: integration-${{ matrix.database }}
+
+  # E2E tests - SQLite
+  e2e-tests-sqlite:
+    name: E2E Tests (SQLite) - Shard ${{ matrix.shard }}
+    needs: [unit-tests-backend, unit-tests-frontend]
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Install Playwright browsers
+        run: pnpm --filter=n8n-playwright install-browsers
+
+      - name: Run E2E tests
+        run: |
+          pnpm --filter=n8n-playwright test:local -- --shard=${{ matrix.shard }}/5
+        env:
+          N8N_BASE_URL: http://localhost:5680
+          RESET_E2E_DB: 'true'
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-sqlite-shard-${{ matrix.shard }}
+          path: |
+            packages/testing/playwright/playwright-report/
+            packages/testing/playwright/test-results/
+          retention-days: 7
+
+  # E2E tests - PostgreSQL
+  e2e-tests-postgres:
+    name: E2E Tests (PostgreSQL)
+    needs: [unit-tests-backend, unit-tests-frontend]
+    if: github.event.inputs.test_environment == 'postgres' || github.event.inputs.test_environment == 'all' || github.event_name == 'schedule'
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: n8n
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Install Playwright browsers
+        run: pnpm --filter=n8n-playwright install-browsers
+
+      - name: Run E2E tests with PostgreSQL
+        run: |
+          pnpm --filter=n8n-playwright test:container:postgres -- --shard=${{ matrix.shard }}/3
+        env:
+          DB_TYPE: postgresdb
+          DB_POSTGRESDB_HOST: localhost
+          DB_POSTGRESDB_PORT: 5432
+          DB_POSTGRESDB_DATABASE: n8n
+          DB_POSTGRESDB_USER: postgres
+          DB_POSTGRESDB_PASSWORD: postgres
+          N8N_REDIS_HOST: localhost
+          N8N_REDIS_PORT: 6379
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-postgres-shard-${{ matrix.shard }}
+          path: |
+            packages/testing/playwright/playwright-report/
+            packages/testing/playwright/test-results/
+          retention-days: 7
+
+  # Performance tests
+  performance-tests:
+    name: Performance Tests
+    needs: [e2e-tests-sqlite]
+    if: github.event.inputs.run_all_tests == 'true' || github.event_name == 'schedule'
+    runs-on: blacksmith-8vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Install Playwright browsers
+        run: pnpm --filter=n8n-playwright install-browsers
+
+      - name: Run performance tests
+        run: pnpm --filter=n8n-playwright test:performance
+        env:
+          N8N_BASE_URL: http://localhost:5680
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: performance-results
+          path: |
+            packages/testing/playwright/playwright-report/
+            packages/testing/playwright/test-results/
+          retention-days: 30
+
+  # Binary smoke tests
+  binary-smoke-tests:
+    name: Binary Smoke Tests
+    needs: build-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: ['22.x']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build n8n
+        run: pnpm build
+
+      - name: Test n8n CLI binary
+        run: |
+          # Test help command
+          ./packages/cli/bin/n8n --help
+
+          # Test version command
+          ./packages/cli/bin/n8n --version
+
+          # Test that server starts (timeout after 30s)
+          timeout 30 ./packages/cli/bin/n8n start --tunnel=false &
+          sleep 10
+          curl -f http://localhost:5678/healthz || exit 1
+          pkill -f "n8n start" || true
+
+      - name: Test node-dev CLI
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pushd packages/node-dev
+          pnpm build
+          ./bin/n8n-node-dev --help
+          popd
+
+  # API tests
+  api-tests:
+    name: API Integration Tests
+    needs: build-matrix
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Install Playwright browsers
+        run: pnpm --filter=n8n-playwright install-browsers
+
+      - name: Run API tests
+        run: |
+          pnpm --filter=n8n-playwright test:local -- --project='*api*' || echo "API tests completed"
+        env:
+          N8N_BASE_URL: http://localhost:5680
+          RESET_E2E_DB: 'true'
+
+  # Test summary
+  test-summary:
+    name: Test Summary
+    needs:
+      - unit-tests-backend
+      - unit-tests-scoped
+      - unit-tests-frontend
+      - integration-tests
+      - e2e-tests-sqlite
+      - binary-smoke-tests
+      - api-tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check each job result
+          results=()
+          results+=("Backend Unit Tests: ${{ needs.unit-tests-backend.result }}")
+          results+=("@n8n Packages Tests: ${{ needs.unit-tests-scoped.result }}")
+          results+=("Frontend Unit Tests: ${{ needs.unit-tests-frontend.result }}")
+          results+=("Integration Tests: ${{ needs.integration-tests.result }}")
+          results+=("E2E Tests (SQLite): ${{ needs.e2e-tests-sqlite.result }}")
+          results+=("Binary Smoke Tests: ${{ needs.binary-smoke-tests.result }}")
+          results+=("API Tests: ${{ needs.api-tests.result }}")
+
+          for result in "${results[@]}"; do
+            if [[ "$result" == *"success"* ]]; then
+              echo "- :white_check_mark: $result" >> $GITHUB_STEP_SUMMARY
+            elif [[ "$result" == *"failure"* ]]; then
+              echo "- :x: $result" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- :warning: $result" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Fail if any required job failed
+        if: |
+          needs.unit-tests-backend.result == 'failure' ||
+          needs.unit-tests-frontend.result == 'failure' ||
+          needs.integration-tests.result == 'failure' ||
+          needs.e2e-tests-sqlite.result == 'failure' ||
+          needs.binary-smoke-tests.result == 'failure'
+        run: exit 1

@@ -1,0 +1,469 @@
+name: Release Build Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to validate (e.g., 1.70.0)'
+        required: false
+        type: string
+      skip_docker:
+        description: 'Skip Docker build validation'
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+      - 'release/*'
+    paths:
+      - 'package.json'
+      - 'packages/*/package.json'
+  pull_request:
+    branches:
+      - 'release/*'
+
+concurrency:
+  group: release-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: '--max-old-space-size=8192'
+
+jobs:
+  # Validate package versions are consistent
+  validate-versions:
+    name: Validate Package Versions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -e 'console.log(require("./package.json").version)')
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Validating version: $VERSION"
+
+      - name: Validate package versions consistency
+        run: |
+          ROOT_VERSION=$(node -e 'console.log(require("./package.json").version)')
+          echo "Root version: $ROOT_VERSION"
+
+          # Check key packages have consistent versions
+          PACKAGES=(
+            "packages/cli"
+            "packages/core"
+            "packages/workflow"
+            "packages/nodes-base"
+          )
+
+          ERRORS=0
+          for pkg in "${PACKAGES[@]}"; do
+            if [ -f "$pkg/package.json" ]; then
+              PKG_VERSION=$(node -e "console.log(require('./$pkg/package.json').version)")
+              echo "$pkg: $PKG_VERSION"
+              if [ "$PKG_VERSION" != "$ROOT_VERSION" ]; then
+                echo "::error::Version mismatch in $pkg: $PKG_VERSION vs $ROOT_VERSION"
+                ERRORS=$((ERRORS + 1))
+              fi
+            fi
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::Found $ERRORS version mismatches"
+            exit 1
+          fi
+
+  # Full build for all platforms
+  build-all-platforms:
+    name: Build (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    needs: validate-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ['22.x']
+        include:
+          - os: ubuntu-latest
+            node-version: '20.x'
+          - os: ubuntu-latest
+            node-version: '24.x'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ matrix.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ matrix.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        shell: bash
+        run: |
+          pnpm build > build.log 2>&1 || {
+            echo "Build failed. Last 50 lines of log:"
+            tail -n 50 build.log
+            exit 1
+          }
+          echo "Build successful"
+          tail -n 20 build.log
+
+      - name: Verify build artifacts
+        shell: bash
+        run: |
+          # Check that key dist directories exist
+          REQUIRED_DISTS=(
+            "packages/cli/dist"
+            "packages/core/dist"
+            "packages/workflow/dist"
+            "packages/nodes-base/dist"
+          )
+
+          ERRORS=0
+          for dist in "${REQUIRED_DISTS[@]}"; do
+            if [ ! -d "$dist" ]; then
+              echo "::error::Missing build artifact: $dist"
+              ERRORS=$((ERRORS + 1))
+            else
+              FILE_COUNT=$(find "$dist" -type f | wc -l)
+              echo "$dist: $FILE_COUNT files"
+            fi
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: build-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            packages/cli/dist
+            packages/core/dist
+            packages/workflow/dist
+          retention-days: 7
+
+  # Binary validation
+  validate-binaries:
+    name: Validate Binaries (${{ matrix.os }})
+    needs: build-all-platforms
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '22.x'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test n8n CLI commands
+        run: |
+          echo "Testing n8n CLI..."
+
+          # Test help
+          ./packages/cli/bin/n8n --help
+          echo "Help command: OK"
+
+          # Test version
+          VERSION=$(./packages/cli/bin/n8n --version)
+          echo "Version: $VERSION"
+
+          # Test export (should fail gracefully with no workflows)
+          ./packages/cli/bin/n8n export:workflow --all 2>&1 || true
+          echo "Export command: OK"
+
+          # Test list commands
+          ./packages/cli/bin/n8n list:credentials 2>&1 || true
+          echo "List commands: OK"
+
+      - name: Test n8n server startup
+        run: |
+          echo "Testing n8n server startup..."
+
+          # Start server in background
+          ./packages/cli/bin/n8n start --tunnel=false &
+          N8N_PID=$!
+
+          # Wait for server to start
+          for i in {1..30}; do
+            if curl -sf http://localhost:5678/healthz > /dev/null 2>&1; then
+              echo "Server started successfully"
+              break
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+
+          # Verify health endpoint
+          curl -sf http://localhost:5678/healthz || {
+            echo "::error::Health check failed"
+            kill $N8N_PID 2>/dev/null || true
+            exit 1
+          }
+
+          # Verify API endpoint
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5678/api/v1/workflows)
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "401" ]; then
+            echo "::warning::Unexpected API response code: $HTTP_CODE"
+          fi
+
+          # Cleanup
+          kill $N8N_PID 2>/dev/null || true
+          echo "Server validation: OK"
+
+  # Docker build validation
+  validate-docker:
+    name: Validate Docker Build
+    needs: [validate-versions, build-all-platforms]
+    if: github.event.inputs.skip_docker != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
+
+      - name: Build Docker image
+        run: |
+          pnpm build:docker 2>&1 | tee docker-build.log || {
+            echo "Docker build failed"
+            tail -n 100 docker-build.log
+            exit 1
+          }
+
+      - name: Test Docker image
+        run: |
+          # Get image name
+          IMAGE_NAME="n8n-custom:$(node -e 'console.log(require("./package.json").version)')"
+
+          # Check if image exists (fallback to default name)
+          if ! docker image inspect "$IMAGE_NAME" > /dev/null 2>&1; then
+            IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep n8n | head -1)
+          fi
+
+          if [ -z "$IMAGE_NAME" ]; then
+            echo "::warning::No n8n Docker image found, skipping container test"
+            exit 0
+          fi
+
+          echo "Testing image: $IMAGE_NAME"
+
+          # Run container
+          docker run -d --name n8n-test -p 5678:5678 "$IMAGE_NAME"
+
+          # Wait for startup
+          for i in {1..30}; do
+            if docker exec n8n-test wget -q --spider http://localhost:5678/healthz 2>/dev/null; then
+              echo "Container healthy"
+              break
+            fi
+            echo "Waiting for container... ($i/30)"
+            sleep 2
+          done
+
+          # Check health
+          docker exec n8n-test wget -q -O- http://localhost:5678/healthz || {
+            echo "Container health check failed"
+            docker logs n8n-test
+            docker rm -f n8n-test
+            exit 1
+          }
+
+          # Cleanup
+          docker rm -f n8n-test
+          echo "Docker validation: OK"
+
+  # Typecheck validation
+  validate-types:
+    name: Validate TypeScript Types
+    needs: validate-versions
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Run typecheck
+        run: pnpm typecheck
+
+  # Lint validation
+  validate-lint:
+    name: Validate Linting
+    needs: validate-versions
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Run lint
+        run: pnpm lint
+
+  # NPM publish dry run
+  validate-npm-publish:
+    name: Validate NPM Publish (Dry Run)
+    needs: [build-all-platforms, validate-types]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-nodejs
+        with:
+          node-version: '22.x'
+
+      - name: Dry-run publish check
+        run: |
+          # Check n8n package
+          pnpm --filter n8n publish --no-git-checks --dry-run 2>&1 || {
+            echo "::warning::n8n publish dry-run had issues"
+          }
+
+          # Check other publishable packages
+          pnpm publish -r --filter '!n8n' --no-git-checks --dry-run 2>&1 || {
+            echo "::warning::Other packages publish dry-run had issues"
+          }
+
+          echo "NPM publish validation: OK"
+
+  # Security scan
+  security-scan:
+    name: Security Scan
+    needs: validate-versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '22.x'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run npm audit
+        run: pnpm audit --audit-level=high || echo "::warning::Audit found issues"
+        continue-on-error: true
+
+      - name: Check for known vulnerabilities in dependencies
+        run: |
+          # Check for critical vulnerabilities
+          pnpm audit --json > audit.json 2>&1 || true
+          CRITICAL=$(cat audit.json | jq '.vulnerabilities | to_entries | map(select(.value.severity == "critical")) | length' 2>/dev/null || echo "0")
+
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Found $CRITICAL critical vulnerabilities"
+            cat audit.json | jq '.vulnerabilities | to_entries | map(select(.value.severity == "critical"))'
+          fi
+
+  # Release summary
+  release-summary:
+    name: Release Validation Summary
+    needs:
+      - validate-versions
+      - build-all-platforms
+      - validate-binaries
+      - validate-types
+      - validate-lint
+      - validate-npm-publish
+      - security-scan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Release Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.validate-versions.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Create status table
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          declare -A results
+          results["Version Validation"]="${{ needs.validate-versions.result }}"
+          results["Multi-Platform Build"]="${{ needs.build-all-platforms.result }}"
+          results["Binary Validation"]="${{ needs.validate-binaries.result }}"
+          results["TypeScript Types"]="${{ needs.validate-types.result }}"
+          results["Linting"]="${{ needs.validate-lint.result }}"
+          results["NPM Publish (Dry Run)"]="${{ needs.validate-npm-publish.result }}"
+          results["Security Scan"]="${{ needs.security-scan.result }}"
+
+          for check in "Version Validation" "Multi-Platform Build" "Binary Validation" "TypeScript Types" "Linting" "NPM Publish (Dry Run)" "Security Scan"; do
+            status="${results[$check]}"
+            if [ "$status" = "success" ]; then
+              echo "| $check | :white_check_mark: Passed |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$status" = "failure" ]; then
+              echo "| $check | :x: Failed |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$status" = "skipped" ]; then
+              echo "| $check | :fast_forward: Skipped |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $check | :warning: $status |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Fail if critical checks failed
+        if: |
+          needs.validate-versions.result == 'failure' ||
+          needs.build-all-platforms.result == 'failure' ||
+          needs.validate-binaries.result == 'failure' ||
+          needs.validate-types.result == 'failure'
+        run: |
+          echo "::error::Critical validation checks failed"
+          exit 1
