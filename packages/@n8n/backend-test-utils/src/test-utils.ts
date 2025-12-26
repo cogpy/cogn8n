@@ -5,7 +5,13 @@
  * for unit and integration testing across n8n backend packages.
  */
 
-import type { IExecuteFunctions, INodeExecutionData, INodeType } from 'n8n-workflow';
+import type {
+	IBinaryKeyData,
+	IDataObject,
+	IExecuteFunctions,
+	INodeExecutionData,
+	INodeType,
+} from 'n8n-workflow';
 
 /**
  * Creates a mock execution context for testing nodes
@@ -38,8 +44,8 @@ export function createMockExecuteFunctions(
  * Creates mock node execution data
  */
 export function createMockNodeExecutionData(
-	json: Record<string, unknown> = {},
-	binary?: Record<string, unknown>,
+	json: IDataObject = {},
+	binary?: IBinaryKeyData,
 ): INodeExecutionData {
 	return {
 		json,
@@ -55,7 +61,8 @@ export async function executeNode(
 	executeFunctions: IExecuteFunctions,
 ): Promise<INodeExecutionData[][] | null> {
 	if (nodeType.execute) {
-		return nodeType.execute.call(executeFunctions);
+		const result = await nodeType.execute.call(executeFunctions);
+		return result as INodeExecutionData[][] | null;
 	}
 	return null;
 }
