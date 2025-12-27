@@ -1,10 +1,12 @@
 import type {
+	IDataObject,
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { OpenCogClient, type OpenCogCredentials } from '../client/OpenCogClient';
 
 export class AtomSpace implements INodeType {
 	description: INodeTypeDescription = {
@@ -20,7 +22,25 @@ export class AtomSpace implements INodeType {
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
+		credentials: [
+			{
+				name: 'openCogApi',
+				required: false,
+				displayOptions: {
+					show: {
+						useCredentials: [true],
+					},
+				},
+			},
+		],
 		properties: [
+			{
+				displayName: 'Use Credentials',
+				name: 'useCredentials',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to use OpenCog API credentials for real server connection',
+			},
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -191,31 +211,74 @@ export class AtomSpace implements INodeType {
 		],
 	};
 
+	private client: OpenCogClient | null = null;
+
+	/**
+	 * Initialize OpenCog client with credentials or simulation mode
+	 */
+	private async getClient(context: IExecuteFunctions): Promise<OpenCogClient> {
+		if (this.client) {
+			return this.client;
+		}
+
+		const useCredentials = context.getNodeParameter('useCredentials', 0, false) as boolean;
+
+		let credentials: OpenCogCredentials = {
+			serverUrl: '',
+			useSimulation: true,
+		};
+
+		if (useCredentials) {
+			try {
+				const creds = await context.getCredentials('openCogApi');
+				credentials = {
+					serverUrl: creds.serverUrl as string,
+					apiKey: creds.apiKey as string,
+					username: creds.username as string,
+					password: creds.password as string,
+					timeout: creds.timeout as number,
+					useSimulation: creds.useSimulation as boolean,
+				};
+			} catch {
+				// Credentials not available, use simulation mode
+				credentials.useSimulation = true;
+			}
+		}
+
+		this.client = new OpenCogClient(credentials);
+		await this.client.connect();
+		return this.client;
+	}
+
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
+		const node = new AtomSpace();
 
 		for (let i = 0; i < items.length; i++) {
 			const operation = this.getNodeParameter('operation', i) as string;
 
-			let result: any;
+			let result: Record<string, unknown>;
 
 			try {
+				const client = await node.getClient(this);
+				const isSimulation = client.isSimulationMode();
+
 				switch (operation) {
 					case 'addAtom':
-						result = await (this as any).addAtom(this, i);
+						result = await node.addAtom(this, i, client);
 						break;
 					case 'queryAtoms':
-						result = await (this as any).queryAtoms(this, i);
+						result = await node.queryAtoms(this, i, client);
 						break;
 					case 'patternMatch':
-						result = await (this as any).patternMatch(this, i);
+						result = await node.patternMatch(this, i, client);
 						break;
 					case 'getTruthValue':
-						result = await (this as any).getTruthValue(this, i);
+						result = await node.getTruthValue(this, i, client);
 						break;
 					case 'setTruthValue':
-						result = await (this as any).setTruthValue(this, i);
+						result = await node.setTruthValue(this, i, client);
 						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
@@ -223,14 +286,18 @@ export class AtomSpace implements INodeType {
 						});
 				}
 
+				// Add metadata about connection mode
+				result.simulationMode = isSimulation;
+				result.serverConnected = client.isConnected();
+
 				returnData.push({
-					json: result,
+					json: result as IDataObject,
 					pairedItem: { item: i },
 				});
 			} catch (error) {
 				if (this.continueOnFail()) {
 					returnData.push({
-						json: { error: error.message },
+						json: { error: (error as Error).message },
 						pairedItem: { item: i },
 					});
 					continue;
@@ -242,119 +309,113 @@ export class AtomSpace implements INodeType {
 		return [returnData];
 	}
 
-	// @ts-expect-error Method called dynamically via (this as any)
-	private async addAtom(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+	private async addAtom(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
 		const atomType = context.getNodeParameter('atomType', itemIndex) as string;
 		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
-		const truthValueParam = context.getNodeParameter('truthValue', itemIndex) as any;
-		
+		const truthValueParam = context.getNodeParameter('truthValue', itemIndex) as {
+			values?: { strength: number; confidence: number };
+		};
+
 		const truthValue = truthValueParam?.values || { strength: 0.8, confidence: 0.9 };
 
-		// Simulate AtomSpace operation
-		const atomId = `atom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-		
+		const atom = await client.addAtom(atomType, atomName, truthValue);
+
 		return {
 			operation: 'addAtom',
-			atomId,
-			atomType,
-			atomName,
-			truthValue,
+			atomId: atom.id,
+			atomType: atom.type,
+			atomName: atom.name,
+			truthValue: atom.truthValue,
 			timestamp: new Date().toISOString(),
 			success: true,
 		};
 	}
 
-	// @ts-expect-error Method called dynamically via (this as any)
-	private async queryAtoms(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+	private async queryAtoms(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
 		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
 		const maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
 
-		// Simulate query operation
-		const results = [];
-		const numResults = Math.min(maxResults, Math.floor(Math.random() * 10) + 1);
-		
-		for (let i = 0; i < numResults; i++) {
-			results.push({
-				atomId: `atom_${i}_${atomName}`,
-				atomType: 'ConceptNode',
-				atomName: `${atomName}_${i}`,
-				truthValue: {
-					strength: Math.random(),
-					confidence: Math.random(),
-				},
-			});
-		}
+		const queryResult = await client.queryAtoms(atomName, undefined, maxResults);
 
 		return {
 			operation: 'queryAtoms',
 			query: atomName,
-			results,
-			totalCount: results.length,
+			results: queryResult.atoms.map((atom) => ({
+				atomId: atom.id,
+				atomType: atom.type,
+				atomName: atom.name,
+				truthValue: atom.truthValue,
+			})),
+			totalCount: queryResult.totalCount,
 		};
 	}
 
-	// @ts-expect-error Method called dynamically via (this as any)
-	private async patternMatch(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+	private async patternMatch(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
 		const pattern = context.getNodeParameter('pattern', itemIndex) as string;
 		const maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
 
-		// Simulate pattern matching
-		const matches = [];
-		const numMatches = Math.min(maxResults, Math.floor(Math.random() * 5) + 1);
-
-		for (let i = 0; i < numMatches; i++) {
-			matches.push({
-				matchId: `match_${i}`,
-				bindings: {
-					'$X': `Entity_${i}`,
-					'$Y': `Property_${i}`,
-				},
-				truthValue: {
-					strength: Math.random(),
-					confidence: Math.random(),
-				},
-			});
-		}
+		const matchResult = await client.patternMatch(pattern, maxResults);
 
 		return {
 			operation: 'patternMatch',
 			pattern,
-			matches,
-			matchCount: matches.length,
+			matches: matchResult.matches,
+			matchCount: matchResult.matchCount,
 		};
 	}
 
-	// @ts-expect-error Method called dynamically via (this as any)
-	private async getTruthValue(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+	private async getTruthValue(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
 		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
 
-		// Simulate getting truth value
+		const truthValue = await client.getTruthValue(atomName);
+
 		return {
 			operation: 'getTruthValue',
 			atomName,
-			truthValue: {
-				strength: Math.random(),
-				confidence: Math.random(),
-			},
-			exists: true,
+			truthValue: truthValue || { strength: 0, confidence: 0 },
+			exists: truthValue !== null,
 		};
 	}
 
-	// @ts-expect-error Method called dynamically via (this as any)
-	private async setTruthValue(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+	private async setTruthValue(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
 		const atomName = context.getNodeParameter('atomName', itemIndex) as string;
-		const truthValueParam = context.getNodeParameter('truthValue', itemIndex) as any;
-		
-		const truthValue = truthValueParam?.values || { strength: 0.8, confidence: 0.9 };
+		const truthValueParam = context.getNodeParameter('truthValue', itemIndex) as {
+			values?: { strength: number; confidence: number };
+		};
+
+		const newTruthValue = truthValueParam?.values || { strength: 0.8, confidence: 0.9 };
+
+		// Get old truth value first
+		const oldTruthValue = await client.getTruthValue(atomName);
+
+		// Set new truth value
+		await client.setTruthValue(atomName, newTruthValue);
 
 		return {
 			operation: 'setTruthValue',
 			atomName,
-			oldTruthValue: {
-				strength: Math.random(),
-				confidence: Math.random(),
-			},
-			newTruthValue: truthValue,
+			oldTruthValue: oldTruthValue || { strength: 0, confidence: 0 },
+			newTruthValue,
 			success: true,
 		};
 	}

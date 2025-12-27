@@ -3,7 +3,7 @@
  * Tests complete workflows with multiple nodes working together
  */
 
-import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import type { INodeExecutionData } from 'n8n-workflow';
 
 export interface WorkflowTestCase {
 	name: string;
@@ -101,8 +101,7 @@ export class WorkflowTestRunner {
 		const totalTests = this.results.length;
 		const passedTests = this.results.filter((r) => r.passed).length;
 		const failedTests = totalTests - passedTests;
-		const avgExecutionTime =
-			this.results.reduce((sum, r) => sum + r.executionTime, 0) / totalTests;
+		const avgExecutionTime = this.results.reduce((sum, r) => sum + r.executionTime, 0) / totalTests;
 
 		let report = '# OpenCog Workflow Integration Test Report\n\n';
 		report += `Generated: ${new Date().toISOString()}\n\n`;
@@ -181,7 +180,7 @@ export class WorkflowTestRunner {
 
 		// Check output structure
 		if (expected.outputStructure) {
-			for (const [key, value] of Object.entries(expected.outputStructure)) {
+			for (const key of Object.keys(expected.outputStructure)) {
 				if (output.length > 0 && !(key in output[0].json)) {
 					return {
 						passed: false,

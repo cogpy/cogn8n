@@ -251,7 +251,7 @@ export class CognitiveProfiler {
 	 */
 	getAllProfiles(): Map<string, any> {
 		const result = new Map();
-		for (const [key, value] of this.profiles.entries()) {
+		for (const key of this.profiles.keys()) {
 			result.set(key, this.getProfile(key));
 		}
 		return result;
