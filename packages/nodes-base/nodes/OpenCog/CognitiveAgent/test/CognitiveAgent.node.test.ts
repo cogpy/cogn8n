@@ -32,12 +32,12 @@ describe('CognitiveAgent Node', () => {
 		});
 
 		test('should have all agent types', () => {
-			const agentType = cognitiveAgent.description.properties.find(p => p.name === 'agentType');
+			const agentType = cognitiveAgent.description.properties.find((p) => p.name === 'agentType');
 			expect(agentType).toBeDefined();
-			
+
 			const agentOptions = agentType?.options as Array<{ value: string }>;
-			const agentTypes = agentOptions.map(op => op.value);
-			
+			const agentTypes = agentOptions.map((op) => op.value);
+
 			expect(agentTypes).toContain('generalPurpose');
 			expect(agentTypes).toContain('goalOriented');
 			expect(agentTypes).toContain('reactive');
@@ -49,17 +49,18 @@ describe('CognitiveAgent Node', () => {
 
 	describe('General Purpose Agent', () => {
 		test('should process general purpose agent', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('generalPurpose') // agentType
 				.mockReturnValueOnce('TestAgent') // agentName
 				.mockReturnValueOnce('Test stimulus') // inputStimulus
 				.mockReturnValueOnce({ values: { attentionThreshold: 0.5 } }); // agentConfig
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('generalPurpose');
 			expect(output.agentName).toBe('TestAgent');
@@ -71,27 +72,30 @@ describe('CognitiveAgent Node', () => {
 
 	describe('Goal-Oriented Agent', () => {
 		test('should process goal-oriented agent', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('goalOriented') // agentType
-				.mockReturnValueOnce('PlannerAgent') // agentName  
+				.mockReturnValueOnce('PlannerAgent') // agentName
 				.mockReturnValueOnce('Planning task') // inputStimulus
 				.mockReturnValueOnce('Goal 1\nGoal 2\nGoal 3') // goals
 				.mockReturnValueOnce({ values: {} }); // agentConfig
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('goalOriented');
 			expect(output.goals).toHaveLength(3);
 			expect(output.goalPlanning).toBeDefined();
-			expect(output.goalPlanning.activeGoals).toBeDefined();
-			expect(output.goalPlanning.plannedActions).toBeDefined();
+			const goalPlanning = output.goalPlanning as { activeGoals: unknown; plannedActions: unknown };
+			expect(goalPlanning.activeGoals).toBeDefined();
+			expect(goalPlanning.plannedActions).toBeDefined();
 		});
 	});
 
 	describe('Learning Agent', () => {
 		test('should process learning agent', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('learning') // agentType
 				.mockReturnValueOnce('LearningAgent') // agentName
 				.mockReturnValueOnce('Learning data') // inputStimulus
@@ -99,19 +103,25 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce({ values: { learningRate: 0.2 } }); // agentConfig
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('learning');
 			expect(output.learningState).toBeDefined();
-			expect(output.learningState.currentKnowledge).toBeDefined();
-			expect(output.learningState.learningProgress).toBeDefined();
-			expect(output.learningState.adaptations).toBeDefined();
+			const learningState = output.learningState as {
+				currentKnowledge: unknown;
+				learningProgress: unknown;
+				adaptations: unknown;
+			};
+			expect(learningState.currentKnowledge).toBeDefined();
+			expect(learningState.learningProgress).toBeDefined();
+			expect(learningState.adaptations).toBeDefined();
 		});
 	});
 
 	describe('Social Agent', () => {
 		test('should process social agent', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('social') // agentType
 				.mockReturnValueOnce('SocialAgent') // agentName
 				.mockReturnValueOnce('Social interaction') // inputStimulus
@@ -119,45 +129,50 @@ describe('CognitiveAgent Node', () => {
 				.mockReturnValueOnce({ values: {} }); // agentConfig
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('social');
 			expect(output.otherAgents).toHaveLength(3);
 			expect(output.socialInteractions).toBeDefined();
 			expect(output.socialState).toBeDefined();
-			expect(output.socialState.relationships).toBeDefined();
+			const socialState = output.socialState as { relationships: unknown };
+			expect(socialState.relationships).toBeDefined();
 		});
 	});
 
 	describe('Emotional Agent', () => {
 		test('should process emotional agent', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('emotional') // agentType
 				.mockReturnValueOnce('EmotionalAgent') // agentName
 				.mockReturnValueOnce('Emotional stimulus') // inputStimulus
 				.mockReturnValueOnce({ values: { emotionalSensitivity: 0.8 } }); // agentConfig
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('emotional');
 			expect(output.emotionalState).toBeDefined();
-			expect(output.emotionalState.currentEmotions).toBeDefined();
+			const emotionalState = output.emotionalState as { currentEmotions: unknown };
+			expect(emotionalState.currentEmotions).toBeDefined();
 			expect(output.emotionalResponse).toBeDefined();
-			expect(output.emotionalResponse.dominantEmotion).toBeDefined();
+			const emotionalResponse = output.emotionalResponse as { dominantEmotion: unknown };
+			expect(emotionalResponse.dominantEmotion).toBeDefined();
 		});
 	});
 
 	describe('Reactive Agent', () => {
 		test('should process reactive agent', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('reactive') // agentType
 				.mockReturnValueOnce('ReactiveAgent') // agentName
 				.mockReturnValueOnce('Urgent stimulus') // inputStimulus
 				.mockReturnValueOnce({ values: {} }); // agentConfig
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.agentType).toBe('reactive');
 			expect(output.availableReactions).toBeDefined();
@@ -168,12 +183,11 @@ describe('CognitiveAgent Node', () => {
 
 	describe('Error Handling', () => {
 		test('should handle unknown agent type', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
-				.mockReturnValueOnce('unknownType');
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValueOnce('unknownType');
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
 			const result = await cognitiveAgent.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.error).toContain('Unknown agent type');
 		});
