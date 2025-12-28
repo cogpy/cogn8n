@@ -24,7 +24,14 @@ on:
       - '**/package.json'
       - '**/turbo.json'
       - '.github/workflows/build-windows.yml'
-
+  push:
+    branches:
+      - master
+      - 'release/*'
+    paths:
+      - 'packages/**'
+      - '.github/workflows/build-windows.yml'
+      
 jobs:
   build:
     runs-on: windows-latest
