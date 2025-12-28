@@ -457,6 +457,7 @@ export class WorkflowRunner {
 					);
 
 					reject(error);
+					return;
 				}
 
 				const fullExecutionData = await this.executionRepository.findSingleExecution(executionId, {
