@@ -40,7 +40,7 @@ jobs:
   # Matrix build for all packages
   build-matrix:
     name: Build All Packages
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     outputs:
       packages: ${{ steps.get-packages.outputs.packages }}
     steps:
@@ -71,7 +71,7 @@ jobs:
   unit-tests-backend:
     name: Backend Unit Tests
     needs: build-matrix
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -116,7 +116,7 @@ jobs:
   unit-tests-scoped:
     name: '@n8n Packages Unit Tests'
     needs: build-matrix
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -156,7 +156,7 @@ jobs:
   unit-tests-frontend:
     name: Frontend Unit Tests
     needs: build-matrix
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -186,7 +186,7 @@ jobs:
   integration-tests:
     name: Integration Tests (${{ matrix.database }})
     needs: build-matrix
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -236,7 +236,7 @@ jobs:
   e2e-tests-sqlite:
     name: E2E Tests (SQLite) - Shard ${{ matrix.shard }}
     needs: [unit-tests-backend, unit-tests-frontend]
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -274,7 +274,7 @@ jobs:
     name: E2E Tests (PostgreSQL)
     needs: [unit-tests-backend, unit-tests-frontend]
     if: github.event.inputs.test_environment == 'postgres' || github.event.inputs.test_environment == 'all' || github.event_name == 'schedule'
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
@@ -341,7 +341,7 @@ jobs:
     name: Performance Tests
     needs: [e2e-tests-sqlite]
     if: github.event.inputs.run_all_tests == 'true' || github.event_name == 'schedule'
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -421,7 +421,7 @@ jobs:
   api-tests:
     name: API Integration Tests
     needs: build-matrix
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
