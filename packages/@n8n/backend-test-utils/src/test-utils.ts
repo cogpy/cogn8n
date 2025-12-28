@@ -27,7 +27,7 @@ export function createMockExecuteFunctions(
 		getCredentials: jest.fn().mockResolvedValue({}),
 		getWorkflowStaticData: jest.fn().mockReturnValue({}),
 		helpers: {
-			returnJsonArray: jest.fn((data) => data.map((item: unknown) => ({ json: item }))),
+			returnJsonArray: jest.fn((data: unknown[]) => data.map((item: unknown) => ({ json: item }))),
 			prepareBinaryData: jest.fn(),
 			getBinaryDataBuffer: jest.fn(),
 			request: jest.fn(),
@@ -170,8 +170,8 @@ export function captureConsole() {
 /**
  * Creates a timeout promise for testing
  */
-export function createTimeout(ms: number): Promise<never> {
-	return new Promise((_, reject) => {
+export async function createTimeout(ms: number): Promise<never> {
+	return await new Promise((_, reject) => {
 		setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
 	});
 }
@@ -180,5 +180,5 @@ export function createTimeout(ms: number): Promise<never> {
  * Race a promise against a timeout
  */
 export async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-	return Promise.race([promise, createTimeout(ms)]);
+	return await Promise.race([promise, createTimeout(ms)]);
 }

@@ -32,13 +32,15 @@ describe('PatternMiner Node', () => {
 		});
 
 		test('should have correct mining types', () => {
-			const miningTypeProperty = patternMiner.description.properties.find(p => p.name === 'miningType');
+			const miningTypeProperty = patternMiner.description.properties.find(
+				(p) => p.name === 'miningType',
+			);
 			expect(miningTypeProperty).toBeDefined();
 			expect(miningTypeProperty?.type).toBe('options');
-			
+
 			const miningOptions = miningTypeProperty?.options as Array<{ value: string }>;
-			const miningValues = miningOptions.map(op => op.value);
-			
+			const miningValues = miningOptions.map((op) => op.value);
+
 			expect(miningValues).toContain('frequentPatterns');
 			expect(miningValues).toContain('associationRules');
 			expect(miningValues).toContain('sequentialPatterns');
@@ -50,16 +52,17 @@ describe('PatternMiner Node', () => {
 
 	describe('Frequent Patterns Mining', () => {
 		test('should mine frequent patterns successfully', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('frequentPatterns') // miningType
 				.mockReturnValueOnce('item1, item2, item3, item4') // inputData
 				.mockReturnValueOnce({ values: { minSupport: 0.3, maxPatternLength: 5 } }); // patternConfig
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.miningType).toBe('frequentPatterns');
 			expect(output.patterns).toBeDefined();
@@ -68,33 +71,36 @@ describe('PatternMiner Node', () => {
 		});
 
 		test('should return patterns sorted by support', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('frequentPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport: 0.2, maxPatternLength: 3 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
-			expect(output.patterns.length).toBeGreaterThan(1);
-			
+
+			const patterns = output.patterns as Array<{ support: number }>;
+			expect(patterns.length).toBeGreaterThan(1);
+
 			// Verify patterns are sorted by support (descending)
-			for (let i = 0; i < output.patterns.length - 1; i++) {
-				expect(output.patterns[i].support).toBeGreaterThanOrEqual(output.patterns[i + 1].support);
+			for (let i = 0; i < patterns.length - 1; i++) {
+				expect(patterns[i].support).toBeGreaterThanOrEqual(patterns[i + 1].support);
 			}
 		});
 
 		test('should respect minimum support threshold', async () => {
 			const minSupport = 0.5;
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('frequentPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport, maxPatternLength: 4 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
-			output.patterns.forEach((pattern: any) => {
+
+			(output.patterns as unknown[]).forEach((pattern: any) => {
 				expect(pattern.support).toBeGreaterThanOrEqual(minSupport);
 			});
 		});
@@ -102,16 +108,17 @@ describe('PatternMiner Node', () => {
 
 	describe('Association Rules Discovery', () => {
 		test('should discover association rules successfully', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('associationRules') // miningType
 				.mockReturnValueOnce('transaction data') // inputData
 				.mockReturnValueOnce({ values: { minSupport: 0.3, minConfidence: 0.6 } }); // patternConfig
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.miningType).toBe('associationRules');
 			expect(output.rules).toBeDefined();
@@ -120,17 +127,18 @@ describe('PatternMiner Node', () => {
 		});
 
 		test('should include rule metrics', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('associationRules')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport: 0.2, minConfidence: 0.5 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
-			expect(output.rules.length).toBeGreaterThan(0);
-			
-			output.rules.forEach((rule: any) => {
+
+			expect((output.rules as unknown[]).length).toBeGreaterThan(0);
+
+			(output.rules as unknown[]).forEach((rule: any) => {
 				expect(rule).toHaveProperty('antecedent');
 				expect(rule).toHaveProperty('consequent');
 				expect(rule).toHaveProperty('support');
@@ -143,32 +151,34 @@ describe('PatternMiner Node', () => {
 
 		test('should filter strong rules by confidence', async () => {
 			const minConfidence = 0.7;
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('associationRules')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { minSupport: 0.3, minConfidence } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			expect(output.strongRules).toBeDefined();
 			expect(typeof output.strongRules).toBe('number');
-			expect(output.strongRules).toBeLessThanOrEqual(output.totalRules);
+			expect(output.strongRules as number).toBeLessThanOrEqual(output.totalRules as number);
 		});
 	});
 
 	describe('Sequential Patterns Mining', () => {
 		test('should find sequential patterns successfully', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('sequentialPatterns') // miningType
 				.mockReturnValueOnce('temporal data') // inputData
 				.mockReturnValueOnce({ values: { windowSize: 10 } }); // patternConfig
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.miningType).toBe('sequentialPatterns');
 			expect(output.sequences).toBeDefined();
@@ -177,32 +187,38 @@ describe('PatternMiner Node', () => {
 		});
 
 		test('should include temporal insights', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('sequentialPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize: 8 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			expect(output.temporalInsights).toBeDefined();
-			expect(output.temporalInsights.avgSequenceLength).toBeGreaterThan(0);
-			expect(output.temporalInsights.mostCommonEvent).toBeDefined();
+			const temporalInsights = output.temporalInsights as {
+				avgSequenceLength: number;
+				mostCommonEvent: unknown;
+			};
+			expect(temporalInsights.avgSequenceLength).toBeGreaterThan(0);
+			expect(temporalInsights.mostCommonEvent).toBeDefined();
 		});
 
 		test('should respect window size configuration', async () => {
 			const windowSize = 5;
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('sequentialPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
-			expect(output.config.windowSize).toBe(windowSize);
-			
-			output.sequences.forEach((seq: any) => {
+
+			expect((output.config as { windowSize: number }).windowSize).toBe(windowSize);
+
+			(output.sequences as unknown[]).forEach((seq: any) => {
 				expect(seq.events.length).toBeLessThanOrEqual(windowSize + 1);
 			});
 		});
@@ -210,16 +226,17 @@ describe('PatternMiner Node', () => {
 
 	describe('Causal Patterns Identification', () => {
 		test('should identify causal patterns successfully', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('causalPatterns') // miningType
 				.mockReturnValueOnce('causal data') // inputData
 				.mockReturnValueOnce({ values: { windowSize: 10 } }); // patternConfig
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.miningType).toBe('causalPatterns');
 			expect(output.causalRelations).toBeDefined();
@@ -227,48 +244,53 @@ describe('PatternMiner Node', () => {
 		});
 
 		test('should include causal network structure', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('causalPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize: 12 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			expect(output.causalNetwork).toBeDefined();
-			expect(output.causalNetwork.nodes).toBeDefined();
-			expect(output.causalNetwork.edges).toBeDefined();
-			expect(Array.isArray(output.causalNetwork.nodes)).toBe(true);
-			expect(Array.isArray(output.causalNetwork.edges)).toBe(true);
+			const causalNetwork = output.causalNetwork as { nodes: unknown[]; edges: unknown[] };
+			expect(causalNetwork.nodes).toBeDefined();
+			expect(causalNetwork.edges).toBeDefined();
+			expect(Array.isArray(causalNetwork.nodes)).toBe(true);
+			expect(Array.isArray(causalNetwork.edges)).toBe(true);
 		});
 
 		test('should provide causal insights', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('causalPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { windowSize: 10 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			expect(output.insights).toBeDefined();
-			expect(output.insights.strongestCause).toBeDefined();
-			expect(output.insights.mostCommonEffect).toBeDefined();
+			const insights = output.insights as { strongestCause: unknown; mostCommonEffect: unknown };
+			expect(insights.strongestCause).toBeDefined();
+			expect(insights.mostCommonEffect).toBeDefined();
 		});
 	});
 
 	describe('Anomaly Detection', () => {
 		test('should detect anomalies successfully', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('anomalyDetection') // miningType
 				.mockReturnValueOnce('data with anomalies') // inputData
 				.mockReturnValueOnce({ values: { anomalyThreshold: 0.9 } }); // patternConfig
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.miningType).toBe('anomalyDetection');
 			expect(output.anomalies).toBeDefined();
@@ -277,30 +299,32 @@ describe('PatternMiner Node', () => {
 
 		test('should respect anomaly threshold', async () => {
 			const anomalyThreshold = 0.85;
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('anomalyDetection')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { anomalyThreshold } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
-			output.anomalies.forEach((anomaly: any) => {
+
+			(output.anomalies as unknown[]).forEach((anomaly: any) => {
 				expect(anomaly.anomalyScore).toBeGreaterThanOrEqual(anomalyThreshold);
 			});
 		});
 
 		test('should classify anomaly types', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('anomalyDetection')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { anomalyThreshold: 0.8 } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			const validTypes = ['outlier', 'novelty', 'drift'];
-			output.anomalies.forEach((anomaly: any) => {
+			(output.anomalies as unknown[]).forEach((anomaly: any) => {
 				expect(validTypes).toContain(anomaly.anomalyType);
 			});
 		});
@@ -308,16 +332,17 @@ describe('PatternMiner Node', () => {
 
 	describe('Concept Formation', () => {
 		test('should form concepts successfully', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('conceptFormation') // miningType
 				.mockReturnValueOnce('clusterable data') // inputData
 				.mockReturnValueOnce({ values: { numClusters: 3, clusteringMethod: 'kmeans' } }); // patternConfig
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0]).toHaveLength(1);
-			
+
 			const output = result[0][0].json;
 			expect(output.miningType).toBe('conceptFormation');
 			expect(output.concepts).toBeDefined();
@@ -326,50 +351,57 @@ describe('PatternMiner Node', () => {
 
 		test('should support different clustering methods', async () => {
 			const methods = ['kmeans', 'hierarchical', 'dbscan'];
-			
+
 			for (const method of methods) {
-				mockExecuteFunctions.getNodeParameter = jest.fn()
+				mockExecuteFunctions.getNodeParameter = jest
+					.fn()
 					.mockReturnValueOnce('conceptFormation')
 					.mockReturnValueOnce('test data')
 					.mockReturnValueOnce({ values: { numClusters: 4, clusteringMethod: method } });
 
 				const result = await patternMiner.execute.call(createContext());
 				const output = result[0][0].json;
-				
-				expect(output.config.clusteringMethod).toBe(method);
+
+				expect((output.config as { clusteringMethod: string }).clusteringMethod).toBe(method);
 			}
 		});
 
 		test('should provide clustering quality metrics', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('conceptFormation')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: { numClusters: 5, clusteringMethod: 'kmeans' } });
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			expect(output.qualityMetrics).toBeDefined();
-			expect(output.qualityMetrics.silhouetteScore).toBeDefined();
-			expect(output.qualityMetrics.avgIntraClusterDistance).toBeDefined();
-			expect(output.qualityMetrics.avgInterClusterDistance).toBeDefined();
+			const qualityMetrics = output.qualityMetrics as {
+				silhouetteScore: number;
+				avgIntraClusterDistance: number;
+				avgInterClusterDistance: number;
+			};
+			expect(qualityMetrics.silhouetteScore).toBeDefined();
+			expect(qualityMetrics.avgIntraClusterDistance).toBeDefined();
+			expect(qualityMetrics.avgInterClusterDistance).toBeDefined();
 		});
 	});
 
 	describe('Error Handling', () => {
 		test('should handle unknown mining type', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
-				.mockReturnValueOnce('unknownMiningType');
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValueOnce('unknownMiningType');
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			const output = result[0][0].json;
 			expect(output.error).toContain('Unknown mining type');
 		});
 
 		test('should continue on fail when configured', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('frequentPatterns') // operation
 				.mockImplementation(() => {
 					throw new Error('Test error');
@@ -377,7 +409,7 @@ describe('PatternMiner Node', () => {
 			mockExecuteFunctions.continueOnFail = jest.fn().mockReturnValue(true);
 
 			const result = await patternMiner.execute.call(createContext());
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0][0].json).toHaveProperty('error');
 		});
@@ -385,14 +417,15 @@ describe('PatternMiner Node', () => {
 
 	describe('Configuration Validation', () => {
 		test('should handle default configuration values', async () => {
-			mockExecuteFunctions.getNodeParameter = jest.fn()
+			mockExecuteFunctions.getNodeParameter = jest
+				.fn()
 				.mockReturnValueOnce('frequentPatterns')
 				.mockReturnValueOnce('test data')
 				.mockReturnValueOnce({ values: {} }); // Empty config
 
 			const result = await patternMiner.execute.call(createContext());
 			const output = result[0][0].json;
-			
+
 			expect(output).toBeDefined();
 			expect(output.patterns).toBeDefined();
 		});

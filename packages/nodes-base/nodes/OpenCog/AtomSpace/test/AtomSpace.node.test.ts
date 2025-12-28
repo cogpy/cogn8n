@@ -157,8 +157,9 @@ describe('AtomSpace Node', () => {
 			const output = result[0][0].json;
 			expect(output.operation).toBe('getTruthValue');
 			expect(output.truthValue).toBeDefined();
-			expect(output.truthValue.strength).toBeGreaterThanOrEqual(0);
-			expect(output.truthValue.confidence).toBeGreaterThanOrEqual(0);
+			const truthValue = output.truthValue as { strength: number; confidence: number };
+			expect(truthValue.strength).toBeGreaterThanOrEqual(0);
+			expect(truthValue.confidence).toBeGreaterThanOrEqual(0);
 		});
 
 		test('should set truth value', async () => {

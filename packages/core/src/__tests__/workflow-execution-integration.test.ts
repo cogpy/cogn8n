@@ -5,7 +5,7 @@
  * including node execution, data flow, and error handling.
  */
 
-import type { INodeType, INodeTypeDescription, IWorkflowExecuteAdditionalData } from 'n8n-workflow';
+import type { INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { Workflow } from 'n8n-workflow';
 
 // Mock dependencies
@@ -42,9 +42,7 @@ describe('Workflow Execution Integration', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -114,9 +112,7 @@ describe('Workflow Execution Integration', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(mockNodeType),
 					getByName: jest.fn().mockReturnValue(mockNodeType),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -188,9 +184,7 @@ describe('Workflow Execution Integration', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -227,9 +221,7 @@ describe('Workflow Execution Integration', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -264,9 +256,7 @@ describe('Workflow Execution Integration', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -284,7 +274,7 @@ describe('Workflow Execution Integration', () => {
 				nodes: [],
 				connections: {},
 				settings: {
-					executionOrder: 'v1',
+					executionOrder: 'v1' as const,
 					saveManualExecutions: true,
 					timezone: 'UTC',
 				},
@@ -295,9 +285,7 @@ describe('Workflow Execution Integration', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -343,11 +331,7 @@ describe('Execution Data Structures', () => {
 		});
 
 		it('should handle multiple items', () => {
-			const items = [
-				{ json: { index: 0 } },
-				{ json: { index: 1 } },
-				{ json: { index: 2 } },
-			];
+			const items = [{ json: { index: 0 } }, { json: { index: 1 } }, { json: { index: 2 } }];
 
 			expect(items).toHaveLength(3);
 			items.forEach((item, index) => {
@@ -382,9 +366,7 @@ describe('Workflow Utilities', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 
@@ -418,9 +400,7 @@ describe('Workflow Utilities', () => {
 				nodeTypes: {
 					getByNameAndVersion: jest.fn().mockReturnValue(undefined),
 					getByName: jest.fn().mockReturnValue(undefined),
-					addNode: jest.fn(),
 					getKnownTypes: jest.fn().mockReturnValue([]),
-					removeNode: jest.fn(),
 				},
 			});
 

@@ -29,8 +29,8 @@ function execN8n(args: string[], options: { timeout?: number } = {}): string {
 }
 
 // Helper to check if port is available
-function isPortAvailable(port: number): Promise<boolean> {
-	return new Promise((resolve) => {
+async function isPortAvailable(port: number): Promise<boolean> {
+	return await new Promise((resolve) => {
 		const server = http.createServer();
 		server.once('error', () => resolve(false));
 		server.once('listening', () => {
@@ -122,8 +122,8 @@ describe('n8n CLI Binary Smoke Tests', () => {
 		});
 	});
 
-	describe.skip('Server Startup', () => {
-		// Skip these tests in CI as they require starting a server
+	describe('Server Startup', () => {
+		// These tests require starting a server - skip in CI with environment variable
 		let serverProcess: ReturnType<typeof spawn> | null = null;
 		const TEST_PORT = 5699; // Use non-standard port to avoid conflicts
 
