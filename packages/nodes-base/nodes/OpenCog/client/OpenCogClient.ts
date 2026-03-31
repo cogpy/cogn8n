@@ -574,17 +574,36 @@ export class OpenCogClient {
 }
 
 /**
- * Create a singleton client instance
+ * Per-server client cache, keyed by a combination of serverUrl and username so
+ * that different credential configurations each get their own instance.
+ * Clients with no serverUrl share a single simulation-mode instance.
  */
-let clientInstance: OpenCogClient | null = null;
+const clientCache = new Map<string, OpenCogClient>();
 
-export function getOpenCogClient(credentials: OpenCogCredentials): OpenCogClient {
-	if (!clientInstance) {
-		clientInstance = new OpenCogClient(credentials);
+function credentialKey(credentials: OpenCogCredentials): string {
+	if (!credentials.serverUrl) {
+		return '__simulation__';
 	}
-	return clientInstance;
+	return `${credentials.serverUrl}|${credentials.username ?? ''}`;
 }
 
-export function resetOpenCogClient(): void {
-	clientInstance = null;
+export function getOpenCogClient(credentials: OpenCogCredentials): OpenCogClient {
+	const key = credentialKey(credentials);
+	if (!clientCache.has(key)) {
+		clientCache.set(key, new OpenCogClient(credentials));
+	}
+	return clientCache.get(key)!;
+}
+
+export function resetOpenCogClient(serverUrl?: string): void {
+	if (serverUrl) {
+		// Remove all entries whose key starts with the given serverUrl
+		for (const key of clientCache.keys()) {
+			if (key.startsWith(serverUrl)) {
+				clientCache.delete(key);
+			}
+		}
+	} else {
+		clientCache.clear();
+	}
 }

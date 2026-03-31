@@ -49,6 +49,8 @@ describe('AtomSpace Node', () => {
 			expect(operationValues).toContain('patternMatch');
 			expect(operationValues).toContain('getTruthValue');
 			expect(operationValues).toContain('setTruthValue');
+			expect(operationValues).toContain('exportAtoms');
+			expect(operationValues).toContain('importAtoms');
 		});
 	});
 
@@ -176,6 +178,65 @@ describe('AtomSpace Node', () => {
 			expect(output.operation).toBe('setTruthValue');
 			expect(output.success).toBe(true);
 			expect(output.newTruthValue).toEqual({ strength: 0.6, confidence: 0.7 });
+		});
+
+		test('should export atoms', async () => {
+			mockExecuteFunctions.getNodeParameter = createParamMock({
+				useCredentials: false,
+				operation: 'exportAtoms',
+				maxResults: 10,
+				filterType: '',
+			});
+
+			const result = await atomSpace.execute.call(createContext());
+
+			const output = result[0][0].json;
+			expect(output.operation).toBe('exportAtoms');
+			expect(output.success).toBe(true);
+			expect(output.snapshot).toBeDefined();
+			const snapshot = output.snapshot as { exportedAt: string; atomCount: number; atoms: unknown[] };
+			expect(typeof snapshot.exportedAt).toBe('string');
+			expect(typeof snapshot.atomCount).toBe('number');
+			expect(Array.isArray(snapshot.atoms)).toBe(true);
+		});
+
+		test('should import atoms from JSON', async () => {
+			const atomsJson = JSON.stringify([
+				{ type: 'ConceptNode', name: 'Cat', truthValue: { strength: 0.9, confidence: 0.8 } },
+				{ type: 'ConceptNode', name: 'Dog' },
+			]);
+			mockExecuteFunctions.getNodeParameter = createParamMock({
+				useCredentials: false,
+				operation: 'importAtoms',
+				atomsJson,
+			});
+
+			const result = await atomSpace.execute.call(createContext());
+
+			const output = result[0][0].json;
+			expect(output.operation).toBe('importAtoms');
+			expect(output.importedCount).toBe(2);
+			expect(output.skippedCount).toBe(0);
+			expect(output.success).toBe(true);
+		});
+
+		test('should skip atoms missing required fields on import', async () => {
+			const atomsJson = JSON.stringify([
+				{ type: 'ConceptNode', name: 'ValidAtom' },
+				{ name: 'MissingType' }, // no type
+				{ type: 'ConceptNode' }, // no name
+			]);
+			mockExecuteFunctions.getNodeParameter = createParamMock({
+				useCredentials: false,
+				operation: 'importAtoms',
+				atomsJson,
+			});
+
+			const result = await atomSpace.execute.call(createContext());
+
+			const output = result[0][0].json;
+			expect(output.importedCount).toBe(1);
+			expect(output.skippedCount).toBe(2);
 		});
 	});
 

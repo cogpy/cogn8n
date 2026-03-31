@@ -78,6 +78,18 @@ export class AtomSpace implements INodeType {
 						description: 'Set the truth value of an atom',
 						action: 'Set truth value of an atom',
 					},
+					{
+						name: 'Export Atoms',
+						value: 'exportAtoms',
+						description: 'Export atoms from the AtomSpace as a JSON snapshot',
+						action: 'Export atoms from the AtomSpace',
+					},
+					{
+						name: 'Import Atoms',
+						value: 'importAtoms',
+						description: 'Import atoms into the AtomSpace from a JSON snapshot',
+						action: 'Import atoms into the AtomSpace',
+					},
 				],
 			},
 			// Add Atom fields
@@ -202,11 +214,39 @@ export class AtomSpace implements INodeType {
 				type: 'number',
 				displayOptions: {
 					show: {
-						operation: ['queryAtoms', 'patternMatch'],
+						operation: ['queryAtoms', 'patternMatch', 'exportAtoms'],
 					},
 				},
 				default: 100,
 				description: 'Maximum number of results to return',
+			},
+			// Export / Import fields
+			{
+				displayName: 'Filter Type',
+				name: 'filterType',
+				type: 'string',
+				displayOptions: {
+					show: {
+						operation: ['exportAtoms'],
+					},
+				},
+				default: '',
+				description:
+					'Optional atom type filter for export (e.g. ConceptNode). Leave empty to export all.',
+			},
+			{
+				displayName: 'Atoms JSON',
+				name: 'atomsJson',
+				type: 'string',
+				displayOptions: {
+					show: {
+						operation: ['importAtoms'],
+					},
+				},
+				default: '[]',
+				description:
+					'JSON array of atom objects to import. Each object must have at least "type" and "name" fields.',
+				placeholder: '[{"type":"ConceptNode","name":"Cat","truthValue":{"strength":0.9,"confidence":0.8}}]',
 			},
 		],
 	};
@@ -279,6 +319,12 @@ export class AtomSpace implements INodeType {
 						break;
 					case 'setTruthValue':
 						result = await node.setTruthValue(this, i, client);
+						break;
+					case 'exportAtoms':
+						result = await node.exportAtoms(this, i, client);
+						break;
+					case 'importAtoms':
+						result = await node.importAtoms(this, i, client);
 						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
@@ -417,6 +463,86 @@ export class AtomSpace implements INodeType {
 			oldTruthValue: oldTruthValue || { strength: 0, confidence: 0 },
 			newTruthValue,
 			success: true,
+		};
+	}
+
+	private async exportAtoms(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
+		const maxResults = context.getNodeParameter('maxResults', itemIndex, 100) as number;
+		const filterType = context.getNodeParameter('filterType', itemIndex, '') as string;
+
+		const queryResult = await client.queryAtoms(
+			undefined,
+			filterType || undefined,
+			maxResults,
+		);
+
+		const snapshot = {
+			exportedAt: new Date().toISOString(),
+			atomCount: queryResult.totalCount,
+			atoms: queryResult.atoms,
+		};
+
+		return {
+			operation: 'exportAtoms',
+			snapshot,
+			atomCount: queryResult.totalCount,
+			success: true,
+		};
+	}
+
+	private async importAtoms(
+		context: IExecuteFunctions,
+		itemIndex: number,
+		client: OpenCogClient,
+	): Promise<Record<string, unknown>> {
+		const atomsJson = context.getNodeParameter('atomsJson', itemIndex, '[]') as string;
+
+		let atoms: Array<{ type: string; name: string; truthValue?: { strength: number; confidence: number } }>;
+		try {
+			atoms = JSON.parse(atomsJson);
+		} catch {
+			throw new NodeOperationError(
+				context.getNode(),
+				'Invalid JSON provided for "Atoms JSON". Expected a JSON array of atom objects.',
+				{ itemIndex },
+			);
+		}
+
+		if (!Array.isArray(atoms)) {
+			throw new NodeOperationError(
+				context.getNode(),
+				'"Atoms JSON" must be a JSON array.',
+				{ itemIndex },
+			);
+		}
+
+		const imported = [];
+		const errors = [];
+
+		for (const atomDef of atoms) {
+			if (!atomDef.type || !atomDef.name) {
+				errors.push(`Skipped atom missing required fields: ${JSON.stringify(atomDef)}`);
+				continue;
+			}
+			try {
+				const atom = await client.addAtom(atomDef.type, atomDef.name, atomDef.truthValue);
+				imported.push({ atomId: atom.id, type: atom.type, name: atom.name });
+			} catch (err) {
+				errors.push(`Failed to import atom "${atomDef.name}": ${(err as Error).message}`);
+			}
+		}
+
+		return {
+			operation: 'importAtoms',
+			importedCount: imported.length,
+			skippedCount: errors.length,
+			imported,
+			errors,
+			success: imported.length > 0,
 		};
 	}
 }
